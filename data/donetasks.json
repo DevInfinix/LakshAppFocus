@@ -1,12 +1,7 @@
 {
-    "count": 3,
-    "total": 4,
-    "pendingtasks": {
-        "complex numbers 2": 1,
-        "mole concept": 1,
-        "gravitation": 0,
-        "18 hours screentime": 1
-    },
+    "count": 0,
+    "total": 0,
+    "pendingtasks": {},
     "dates": [
         [
             10,
