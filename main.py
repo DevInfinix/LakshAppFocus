@@ -5,7 +5,7 @@ import tkinter
 import pygame
 from os import environ
 from tkinter import filedialog
-from date_visualizer import CTkCalendarStat
+from modules.date_visualizer import CTkCalendarStat #https://github.com/ZikPin/CTkDataVisualizingWidgets
 import datetime
 
 

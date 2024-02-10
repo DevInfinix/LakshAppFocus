@@ -1,4 +1,4 @@
-# LakshApp
+<h1 align="center"><strong>LakshApp</strong></h1>
 
 LakshApp is a Python GUI application developed using the customtkinter library. It offers various features to enhance productivity and relaxation, making it ideal for studying and staying focused. In the future, LakshApp aims to introduce study-specific features to further assist users in their academic endeavors.
 
