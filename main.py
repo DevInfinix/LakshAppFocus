@@ -66,7 +66,7 @@ class App(customtkinter.CTk):
         self.sidebar_frame = customtkinter.CTkFrame(self, corner_radius=18, fg_color="gray8")
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew", padx=(15,7.5),pady=15, columnspan=1)
         self.sidebar_frame.grid_columnconfigure((0,1), weight=1)
-        self.sidebar_frame.grid_rowconfigure((0,1,2,3), weight=1)
+        self.sidebar_frame.grid_rowconfigure((0,1,2,3,4,5), weight=1)
         
         self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="LakshApp", font=customtkinter.CTkFont(family="Ubuntu", size=28, weight="bold"), text_color="#91b1cc", justify="center")
         self.logo_label.grid(row=0, column=0, padx=40, pady=(100,60),columnspan=2, rowspan=1, sticky="ew")
@@ -83,16 +83,18 @@ class App(customtkinter.CTk):
         self.todotab.grid(padx=40, pady=8, row=2, column=0,columnspan=2, rowspan=1, sticky="ew")
         self.statstab = customtkinter.CTkButton(master=self.sidebar_frame, text=" My Progress ", hover_color="#21568B", corner_radius=20, border_color="#21568B", border_width=2,fg_color="gray13", command=self.set_stats, font=self.btnfont)
         self.statstab.grid(padx=40, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.sessiontab = customtkinter.CTkButton(master=self.sidebar_frame, text=" Live Sessions ", hover_color="#21568B", corner_radius=20, border_color="#21568B", border_width=2,fg_color="gray13", command=self.set_stats, font=self.btnfont)
+        self.sessiontab.grid(padx=40, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
         
         
         self.switch_frame = customtkinter.CTkFrame(self.sidebar_frame, corner_radius=20, fg_color="gray4")
-        self.switch_frame.grid(row=4, column=0, sticky="nsew", padx=40,pady=(8,8), columnspan=2)
-        self.switch_frame.grid_columnconfigure((0,1), weight=1)
-        self.switch_frame.grid_rowconfigure((0,1,2,3), weight=1)
+        self.switch_frame.grid(row=5, column=0, sticky="nsew", padx=40,pady=(8,100), columnspan=2)
+        self.switch_frame.grid_columnconfigure(0, weight=1)
+        self.switch_frame.grid_rowconfigure(0, weight=1)
         
         self.switch_var = customtkinter.StringVar(value="off")
         self.switch = customtkinter.CTkSwitch(self.switch_frame, text="Ambient Mode", onvalue="on", offvalue="off", variable=self.switch_var, command=self.switch_event, switch_height=15, switch_width=40, font=customtkinter.CTkFont(family="Ubuntu", size=14, weight="bold"))
-        self.switch.grid(row=0, column=0, pady=10, padx=10, sticky="ew", columnspan=4)
+        self.switch.grid(row=0, column=0, pady=10, padx=10, sticky="ew", columnspan=1)
         
         
         
@@ -128,8 +130,11 @@ class App(customtkinter.CTk):
         self.stats.grid_rowconfigure(1,weight=1)
         
         self.tab_view.set("HOME")
+        self.hometab.configure(fg_color="#21568B")
         
         self.tab_view._segmented_button.grid_forget()
+        
+        self.tabs = [self.hometab, self.todotab, self.statstab]
         
         
         
@@ -365,14 +370,23 @@ class App(customtkinter.CTk):
             self.message_window.title = "LakshApp"
             self.message_window.focus()
         
-        
+    def set_current_tab(self, current_tab):
+        for tab in self.tabs:
+            if current_tab == tab:
+                tab.configure(fg_color="#21568B")
+            else:
+                tab.configure(fg_color="gray13")
         
     def set_home(self):
         #print(self.tab_view.get())
         self.tab_view.set("HOME")
+        self.set_current_tab(self.hometab)
+        
     def set_todo(self):
         #print(self.tab_view.get())
         self.tab_view.set("TO-DO")
+        self.set_current_tab(self.todotab)
+        
     def set_stats(self):
         self.refresh_cache()
         dates = self.donetasks['dates']
@@ -390,6 +404,7 @@ class App(customtkinter.CTk):
             self.calendar.grid(row=1, column=0, pady=(60,60), padx=60, sticky="new", columnspan=2)
             #print(self.tab_view.get())
             self.tab_view.set("STATS")
+            self.set_current_tab(self.statstab)
         
         
         
