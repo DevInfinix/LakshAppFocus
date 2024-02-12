@@ -7,6 +7,7 @@ from os import environ
 from tkinter import filedialog
 from modules.date_visualizer import CTkCalendarStat #https://github.com/ZikPin/CTkDataVisualizingWidgets
 import datetime
+import webbrowser
 
 
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
@@ -85,7 +86,7 @@ class App(customtkinter.CTk):
         
         
         self.switch_frame = customtkinter.CTkFrame(self.sidebar_frame, corner_radius=20, fg_color="gray4")
-        self.switch_frame.grid(row=4, column=0, sticky="nsew", padx=40,pady=(8,140), columnspan=2)
+        self.switch_frame.grid(row=4, column=0, sticky="nsew", padx=40,pady=(8,8), columnspan=2)
         self.switch_frame.grid_columnconfigure((0,1), weight=1)
         self.switch_frame.grid_rowconfigure((0,1,2,3), weight=1)
         
