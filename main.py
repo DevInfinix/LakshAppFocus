@@ -7,9 +7,13 @@ from os import environ
 from tkinter import filedialog
 from modules.date_visualizer import CTkCalendarStat #https://github.com/ZikPin/CTkDataVisualizingWidgets
 import datetime
-import webbrowser
+import asyncio
+import websockets
+from async_tkinter_loop import async_handler
+from async_tkinter_loop.mixins import AsyncCTk
 
 
+WEBSOCKET_SERVER="ws://localhost:8080"
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 customtkinter.set_appearance_mode("Dark")
 customtkinter.set_default_color_theme("./themes/dark-blue.json") 
@@ -20,7 +24,7 @@ def save_config(config):
         json.dump(config, f, indent=4)
         
 
-class App(customtkinter.CTk):
+class App(customtkinter.CTk, AsyncCTk):
     def __init__(self):
         super().__init__()
         self.title("LakshApp - Stay Focused and Motivated")
@@ -34,7 +38,7 @@ class App(customtkinter.CTk):
         self.grid_rowconfigure(0, weight=1)
         self.normal_font = customtkinter.CTkFont(family="Ubuntu", size=18, weight="normal")
         self.btnfont=customtkinter.CTkFont(family="Ubuntu", size=16, weight="bold")
-        
+        self.total_message = 0
         
         
         ############################################### PYGAME MUSIC ###############################################
@@ -83,8 +87,8 @@ class App(customtkinter.CTk):
         self.todotab.grid(padx=40, pady=8, row=2, column=0,columnspan=2, rowspan=1, sticky="ew")
         self.statstab = customtkinter.CTkButton(master=self.sidebar_frame, text=" My Progress ", hover_color="#21568B", corner_radius=20, border_color="#21568B", border_width=2,fg_color="gray13", command=self.set_stats, font=self.btnfont)
         self.statstab.grid(padx=40, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.sessiontab = customtkinter.CTkButton(master=self.sidebar_frame, text=" Live Sessions ", hover_color="#21568B", corner_radius=20, border_color="#21568B", border_width=2,fg_color="gray13", command=self.set_stats, font=self.btnfont)
-        self.sessiontab.grid(padx=40, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.sessionstab = customtkinter.CTkButton(master=self.sidebar_frame, text=" Live Sessions ", hover_color="#21568B", corner_radius=20, border_color="#21568B", border_width=2,fg_color="gray13", command=self.set_sessions, font=self.btnfont)
+        self.sessionstab.grid(padx=40, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
         
         
         self.switch_frame = customtkinter.CTkFrame(self.sidebar_frame, corner_radius=20, fg_color="gray4")
@@ -114,13 +118,14 @@ class App(customtkinter.CTk):
         
         
         self.tab_view = customtkinter.CTkTabview(master=self.mainframe, corner_radius=18, fg_color="gray8")
-        self.tab_view.grid(padx=0, pady=0,  sticky="ew",column=0, row=1, columnspan=2, rowspan=3)
+        self.tab_view.grid(padx=0, pady=0,  sticky="nsew",column=0, row=1, columnspan=2, rowspan=3)
         #self.tab_view.grid_columnconfigure((0,1,2,3),weight=1)
         #self.tab_view.grid_rowconfigure((0,1,2),weight=1)
         
         self.home = self.tab_view.add("HOME")
         self.todo = self.tab_view.add("TO-DO")
         self.stats = self.tab_view.add("STATS")
+        self.sessions = self.tab_view.add("SESSIONS")
         
         self.home.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
         self.home.grid_rowconfigure((0,1),weight=1)
@@ -128,13 +133,15 @@ class App(customtkinter.CTk):
         self.todo.grid_rowconfigure((0,1),weight=1)
         self.stats.grid_columnconfigure((0,1),weight=1)
         self.stats.grid_rowconfigure(1,weight=1)
+        self.sessions.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
+        self.sessions.grid_rowconfigure((0,1,2,3),weight=1)
         
         self.tab_view.set("HOME")
         self.hometab.configure(fg_color="#21568B")
         
         self.tab_view._segmented_button.grid_forget()
         
-        self.tabs = [self.hometab, self.todotab, self.statstab]
+        self.tabsbutton = [self.hometab, self.todotab, self.statstab, self.sessionstab]
         
         
         
@@ -186,8 +193,6 @@ class App(customtkinter.CTk):
         self.add_todo = customtkinter.CTkButton(self.home, text="+", command=self.add_todo_event, font=customtkinter.CTkFont(family="Ubuntu", size=40), corner_radius=100, fg_color="black", width=5)
         self.add_todo.grid(row=3, column=0, pady=(60,0), padx=(2.5,50), columnspan=8, sticky="e")
         
-        self.message_window = None
-        
         
         
         ############################################### PROGRESS ###############################################
@@ -223,7 +228,7 @@ class App(customtkinter.CTk):
 ############################################### STATS TAB ###############################################
 
 
-
+        
         self.stats_label = customtkinter.CTkLabel(self.stats, text=f"HERE's WHAT I ACHIEVED!", font=customtkinter.CTkFont(family="Ubuntu", size=30, weight="bold"), fg_color="transparent", wraplength=780, justify="center")
         self.stats_label.grid(row=0, column=0, pady=(20,5), padx=60, sticky="new", columnspan=2)
         dates = self.donetasks['dates']
@@ -241,7 +246,24 @@ class App(customtkinter.CTk):
 
         
         
+############################################### SESSIONS TAB ###############################################
+
+
+
+        self.sessions_frame = customtkinter.CTkScrollableFrame(self.sessions, corner_radius=18, fg_color="gray4")
+        self.sessions_frame.grid(row=0, column=0, sticky="nsew", padx=15,pady=(0,20), columnspan=8, rowspan=3)
+        self.sessions_frame.grid_columnconfigure((0,1), weight=1)
         
+        self.send_area = customtkinter.CTkEntry(self.sessions, placeholder_text="Hello bhai kaisa hein bhai!", font=self.normal_font, corner_radius=50, height=60)
+        self.send_area.grid(row=3, column=0, pady=(0,20), padx=(50,10),  sticky="ew", columnspan=7, rowspan=1)
+        self.send_button = customtkinter.CTkButton(self.sessions, text="+", command=self.add_own_message, font=customtkinter.CTkFont(family="Ubuntu", size=40), corner_radius=100, fg_color="black", width=5)
+        self.send_button.grid(row=3, column=0, pady=(0,20), padx=(2.5,50), columnspan=8, sticky="e", rowspan=1)
+            
+        
+        
+        self.message_window = None
+        self.socket = None
+            
 ############################################### FUNCTIONS ###############################################
     
     
@@ -371,7 +393,7 @@ class App(customtkinter.CTk):
             self.message_window.focus()
         
     def set_current_tab(self, current_tab):
-        for tab in self.tabs:
+        for tab in self.tabsbutton:
             if current_tab == tab:
                 tab.configure(fg_color="#21568B")
             else:
@@ -406,20 +428,177 @@ class App(customtkinter.CTk):
             self.tab_view.set("STATS")
             self.set_current_tab(self.statstab)
         
-        
+    @async_handler
+    async def set_sessions(self):
+        if not self.socket:
+            dialog = customtkinter.CTkInputDialog(text="Type 'start' to start or 'join'\nto join a live session.", title="LakshApp")
+            inp = dialog.get_input()
+            if inp:
+                if inp.lower() == 'start':
+                    dialog2 = customtkinter.CTkInputDialog(text="Enter your username\nfor the live session.", title="LakshApp")
+                    inp2 = dialog2.get_input()
+                    if inp2:
+                        if inp2 != '':
+                            self.own_username = inp2
+                            await self.start_server(WEBSOCKET_SERVER, inp2)
+                if inp.lower() == 'join':
+                    dialog2 = customtkinter.CTkInputDialog(text="Enter the code for the live session.", title="LakshApp")
+                    inp2 = dialog2.get_input()
+                    if inp2:
+                        if inp2 != '':
+                            self.server_code = inp2
+                            
+                            dialog3 = customtkinter.CTkInputDialog(text="Enter your username\nfor the live session.", title="LakshApp")
+                            inp3 = dialog3.get_input()
+                            if inp3:
+                                if inp3 != '':
+                                    self.own_username = inp3
+                                    await self.join_server(WEBSOCKET_SERVER, inp2, inp3)
+        else:
+            self.tab_view.set("SESSIONS")
+            self.set_current_tab(self.sessionstab)
+                
+            
         
     def select_all(self):
-        self.entry_todo.select_range(0, 'end')
-        # move cursor to the end
-        self.entry_todo.icursor('end')
-        #stop propagation
-        return 'break'
+        if self.tab_view.get() == 'TO-DO':
+            self.entry_todo.select_range(0, 'end')
+            # move cursor to the end
+            self.entry_todo.icursor('end')
+            #stop propagation
+            return 'break'
+        if self.tab_view.get() == 'SESSIONS':
+            self.send_area.select_range(0, 'end')
+            self.send_area.icursor('end')
+            return 'break'
     
     def refresh_cache(self):
         with open("./data/donetasks.json","r") as f:
             self.donetasks = json.load(f)
             
 
+    
+    
+    @async_handler
+    async def add_own_message(self):
+        message = self.send_area.get()
+        if message == '':
+            return
+        message_frame = customtkinter.CTkFrame(self.sessions_frame, corner_radius=18, fg_color="#14375e")
+        message_frame.grid(row=self.total_message, column=0, sticky="new", padx=5,pady=5, columnspan=2, rowspan=1)
+        message_frame.grid_columnconfigure((0,1), weight=1)
+        
+        message_label = customtkinter.CTkLabel(message_frame, text=f"[You]: {message}", font=customtkinter.CTkFont(family="Ubuntu", size=18, weight="bold"), fg_color="transparent", wraplength=680, justify="left")
+        message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
+            
+        self.total_message += 1
+        
+        data = {
+            'from': 'client',
+            'type': 'message',
+            'message': message,
+            'user': self.own_username
+        }
+        await self.socket.send(json.dumps(data))
+        self.send_area.delete(0, "end")
+        
+        
+    def add_other_message(self, user, message):
+        message_frame = customtkinter.CTkFrame(self.sessions_frame, corner_radius=18, fg_color="#325882")
+        if user == 'System':
+            message_frame.configure(fg_color="purple")
+        message_frame.grid(row=self.total_message, column=0, sticky="new", padx=5,pady=5, columnspan=2, rowspan=1)
+        message_frame.grid_columnconfigure((0,1), weight=1)
+        
+        message_label = customtkinter.CTkLabel(message_frame, text=f"[{user}]: {message}", font=customtkinter.CTkFont(family="Ubuntu", size=18, weight="bold"), fg_color="transparent", wraplength=680, justify="left")
+        message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
+            
+        self.total_message += 1
+    
+    
+    
+    async def start_server(self, server_address, username):
+        async with websockets.connect(server_address) as socket:
+            event = {
+                'from': 'client',
+                'type': 'start',
+                'user': username
+            }
+            await asyncio.sleep(1)
+            await socket.send(json.dumps(event))
+            await asyncio.gather(self.receive_message(socket, 'host', username))
+         
+       
+    async def join_server(self, server_address, code, username):
+        async with websockets.connect(server_address) as socket:
+            event = {
+                'from': 'client',
+                'type': 'join',
+                'code': code,
+                'user': username
+            }
+            await asyncio.sleep(1)
+            await socket.send(json.dumps(event)) 
+            await asyncio.gather(self.receive_message(socket, 'member', username))
+                
+                
+    async def receive_message(self, socket, role, username):
+        async for message in socket:
+            event = json.loads(message)
+            if event['type'] == 'error':
+                if event['errortype'] == 'SessionNotFound':
+                    print(event['message']) 
+                    self.show_message_dialogue(event['message'])
+                    self.set_home()
+                    break
+                if event['errortype'] == 'RoomFull':
+                    print(event['message'])
+                    self.show_message_dialogue(event['message'])
+                    self.set_home()
+                    break
+            if event['type'] == 'started':
+                self.tab_view.set("SESSIONS")
+                self.set_current_tab(self.sessionstab)
+                await asyncio.sleep(2)
+                print(f"Your code is: [{event['code']}]")
+                self.add_other_message(user='System', message=f"Your room's code is: [{event['code']}]")
+                self.socket = socket
+            if event['type'] == 'joined':
+                self.tab_view.set("SESSIONS")
+                self.set_current_tab(self.sessionstab)
+                await asyncio.sleep(2)
+                print(f"You joined {event['code']}")
+                self.add_other_message(user='System', message=f"You joined {event['code']}")
+                self.socket = socket
+            if event['type'] == 'message':
+                print(event['message'])
+                if event['user'] != username:
+                    self.add_other_message(user=event['user'], message=event['message'])
+            if event['type'] == 'disconnected':
+                if event['from'] == 'server':
+                    if event['role'] == 'host':
+                        print('The host has been disconnected')
+                        self.show_message_dialogue('The host has been disconnected')
+                        await asyncio.sleep(1)
+                        self.tab_view.set("HOME")
+                        self.set_current_tab(self.hometab)
+                        self.socket = None
+                        if role == 'host':
+                            return
+                        else:
+                            break
+                    elif event['role'] == 'member':
+                        print('Participant disconnected')
+                        if role == 'member':
+                            self.show_message_dialogue('You have been disconnected')
+                            await asyncio.sleep(1)
+                            self.tab_view.set("HOME")
+                            self.set_current_tab(self.hometab)
+                            return
+                        else:
+                            self.show_message_dialogue('The participant has been disconnected')
+                            
+                
 
 ############################################### TO-DO FRAME ###############################################
 
@@ -465,7 +644,6 @@ class MessageDialogue(customtkinter.CTkToplevel):
         super().__init__()
         self.geometry("300x100")
 
-        self.title = "LakshApp"
         self.label = customtkinter.CTkLabel(self, text=f"{message}")
         self.label.pack(padx=20, pady=20)
 
@@ -478,7 +656,10 @@ class MessageDialogue(customtkinter.CTkToplevel):
 app = App()
 
 def enter(event):
-    app.add_todo_event()
+    if app.tab_view.get() == 'TO-DO':
+        app.add_todo_event()
+    if app.tab_view.get() == 'SESSIONS':
+        app.add_own_message()
 
 def ctrla(event):
     app.select_all()
@@ -486,4 +667,4 @@ def ctrla(event):
 app.bind('<Return>', enter)
 app.bind('<Control-a>', ctrla)
 
-app.mainloop()
+app.async_mainloop()

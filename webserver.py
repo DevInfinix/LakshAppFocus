@@ -57,7 +57,9 @@ async def start(socket, host):
                 forward_event = {
                     'type': 'message',
                     'from': 'server',
-                    'message': f"[{join_code}] | [{host}]: {message['message']}"
+                    'code': join_code,
+                    'message': message['message'],
+                    'user': host
                 }
                 websockets.broadcast(list(ROOMS[join_code].values()), json.dumps(forward_event))
                 
@@ -104,7 +106,9 @@ async def join(socket, join_code, member):
                 forward_event = {
                     'type': 'message',
                     'from': 'server',
-                    'message': f"[{join_code}] | [{member}]: {message['message']}"
+                    'code': join_code,
+                    'message': message['message'],
+                    'user': member
                 }
                 websockets.broadcast(list(ROOM.values()), json.dumps(forward_event))
     finally:
@@ -125,7 +129,7 @@ async def handler(socket):
         message = await socket.recv()
         event = json.loads(message)
         if event['from'] == 'client':
-            user = event['username']
+            user = event['user']
             if event['type'] == 'start':
                 await start(socket, user)
             if event['type'] == 'join':
@@ -153,7 +157,7 @@ async def main():
     stop = loop.create_future()
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
     
-    async with websockets.serve(handler, HOST, PORT, ping_interval=5, ping_timeout=10):
+    async with websockets.serve(handler, HOST, PORT, ping_interval=5, ping_timeout=None):
         print('Server started on {HOST}:{PORT}')
         await stop
 
