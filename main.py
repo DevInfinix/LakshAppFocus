@@ -11,6 +11,7 @@ import asyncio
 import websockets
 from async_tkinter_loop import async_handler
 from async_tkinter_loop.mixins import AsyncCTk
+from CTkMessagebox import CTkMessagebox
 
 
 WEBSOCKET_SERVER="ws://localhost:8080"
@@ -118,7 +119,7 @@ class App(customtkinter.CTk, AsyncCTk):
         
         
         self.tab_view = customtkinter.CTkTabview(master=self.mainframe, corner_radius=18, fg_color="gray8")
-        self.tab_view.grid(padx=0, pady=0,  sticky="nsew",column=0, row=1, columnspan=2, rowspan=3)
+        self.tab_view.grid(padx=0, pady=0,  sticky="nsew",column=0, row=0, columnspan=2, rowspan=4)
         #self.tab_view.grid_columnconfigure((0,1,2,3),weight=1)
         #self.tab_view.grid_rowconfigure((0,1,2),weight=1)
         
@@ -134,7 +135,7 @@ class App(customtkinter.CTk, AsyncCTk):
         self.stats.grid_columnconfigure((0,1),weight=1)
         self.stats.grid_rowconfigure(1,weight=1)
         self.sessions.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
-        self.sessions.grid_rowconfigure((0,1,2,3),weight=1)
+        self.sessions.grid_rowconfigure((0,1,2,3,4,5),weight=1)
         
         self.tab_view.set("HOME")
         self.hometab.configure(fg_color="#21568B")
@@ -250,14 +251,23 @@ class App(customtkinter.CTk, AsyncCTk):
 
 
 
+        self.sessions_progressbutton = customtkinter.CTkButton(self.sessions, text="Start Session Timer", command=self.start_sessions_timer, font=customtkinter.CTkFont(family="Ubuntu", size=15, weight="bold"), corner_radius=8, border_color="#21568B", border_width=2,fg_color="gray13", hover_color="#21568B")
+        self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=10, sticky="ew", columnspan=8, rowspan=1)
+        
+        self.sessions_progressbar = customtkinter.CTkProgressBar(self.sessions, orientation="horizontal", height=15)
+        self.sessions_progressbar.set(self.percent())
+        self.sessions_progressbar.grid(row=1, column=0, pady=(0,0), padx=15, sticky="ew", columnspan=8, rowspan=1)
+        
+        
+        
         self.sessions_frame = customtkinter.CTkScrollableFrame(self.sessions, corner_radius=18, fg_color="gray4")
-        self.sessions_frame.grid(row=0, column=0, sticky="nsew", padx=15,pady=(0,20), columnspan=8, rowspan=3)
+        self.sessions_frame.grid(row=2, column=0, sticky="nsew", padx=15,pady=(10,15), columnspan=8, rowspan=3)
         self.sessions_frame.grid_columnconfigure((0,1), weight=1)
         
         self.send_area = customtkinter.CTkEntry(self.sessions, placeholder_text="Hello bhai kaisa hein bhai!", font=self.normal_font, corner_radius=50, height=60)
-        self.send_area.grid(row=3, column=0, pady=(0,20), padx=(50,10),  sticky="ew", columnspan=7, rowspan=1)
+        self.send_area.grid(row=5, column=0, pady=(0,15), padx=(50,10),  sticky="sew", columnspan=7, rowspan=1)
         self.send_button = customtkinter.CTkButton(self.sessions, text="+", command=self.add_own_message, font=customtkinter.CTkFont(family="Ubuntu", size=40), corner_radius=100, fg_color="black", width=5)
-        self.send_button.grid(row=3, column=0, pady=(0,20), padx=(2.5,50), columnspan=8, sticky="e", rowspan=1)
+        self.send_button.grid(row=5, column=0, pady=(0,15), padx=(2.5,50), columnspan=8, sticky="se", rowspan=1)
             
         
         
@@ -283,7 +293,7 @@ class App(customtkinter.CTk, AsyncCTk):
                 self.music.music.load(file_path)
                 self.music.music.play(-1, fade_ms=2000)
             else:
-                self.show_message_dialogue("Select a valid format\nto play music (mp3/ogg).")
+                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Select a valid format to play music (mp3/ogg/wav).", sound=True, option_1="Okay")
                 self.switch.deselect()
         else:
             self.music.music.unpause()
@@ -313,7 +323,7 @@ class App(customtkinter.CTk, AsyncCTk):
         #for i in self.scrollable_checkbox_frame.checkboxes:
             #print(i.cget("text"), i.get(), self.donetasks['pendingtasks'])
         if checkboxes == []:
-            self.show_message_dialogue("Please select a task first.")
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="Please select a task first.", sound=True, option_1="Cool")
         else:
             dialog = customtkinter.CTkInputDialog(text="Type 'done' to confirm the completion of tasks.", title="LakshApp")
             inp = dialog.get_input()
@@ -338,7 +348,7 @@ class App(customtkinter.CTk, AsyncCTk):
     def delete_tasks(self):
         checkboxes = self.scrollable_checkbox_frame.checkboxes
         if checkboxes == [] or not checkboxes:
-            self.show_message_dialogue("The To-Do list is empty.\nAdd your first To-Do!")
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="The To-Do list is empty. Add your first To-Do now!", sound=True, option_1="Cool")
         else:
             dialog = customtkinter.CTkInputDialog(text="Type 'delete' to confirm the deletion of tasks.", title="LakshApp")
             inp = dialog.get_input()
@@ -353,7 +363,7 @@ class App(customtkinter.CTk, AsyncCTk):
                     save_config(self.donetasks)
                     self.progressbar.set(0)
                     self.progresslabel.configure(text=f"↪ Your Progress ({self.donetasks['count']}/{self.donetasks['total']} completed)")
-                    self.show_message_dialogue("Successfully deleted all To-Dos!")
+                    CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="Successfully deleted all To-Dos!", sound=True, option_1="Less Gooo!!!")
         
         
     def add_todo_event(self):
@@ -361,7 +371,7 @@ class App(customtkinter.CTk, AsyncCTk):
         if event == "":
             return
         elif event in self.donetasks["pendingtasks"]:
-            self.show_message_dialogue("A task with the same title\nis already pending/completed.")
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="A task with the same title is already pending/completed.", sound=True, option_1="Oh Shit!")
             return
         self.donetasks["total"] += 1
         self.donetasks["pendingtasks"][event] = 0
@@ -376,7 +386,7 @@ class App(customtkinter.CTk, AsyncCTk):
         checkboxes.append(checkbox)
         
     
-        self.show_message_dialogue("The task has been added to your To-Do List.\nGo to To-Do Tab to view more!")
+        CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List.\nGo to To-Do Tab to view more!", sound=True, option_1="There we go!")
         
         effect1 = self.music.Sound('./sounds/level.mp3')
         effect1.set_volume(0.1)
@@ -413,7 +423,7 @@ class App(customtkinter.CTk, AsyncCTk):
         self.refresh_cache()
         dates = self.donetasks['dates']
         if dates == []:
-            self.show_message_dialogue("You haven't completed any tasks yet.\nStart completing now!")
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="You haven't completed any tasks yet.\nStart completing now!", sound=True, option_1="Oh shit!")
         else:
             values = {tuple(val): 10 for val in dates}
             self.calendar.destroy()
@@ -516,6 +526,10 @@ class App(customtkinter.CTk, AsyncCTk):
         self.total_message += 1
     
     
+    @async_handler
+    async def start_sessions_timer(self):
+        dialog = customtkinter.CTkInputDialog(text="Type the length of session (in minutes)", title="LakshApp")
+        inp = dialog.get_input()
     
     async def start_server(self, server_address, username):
         async with websockets.connect(server_address) as socket:
@@ -548,12 +562,12 @@ class App(customtkinter.CTk, AsyncCTk):
             if event['type'] == 'error':
                 if event['errortype'] == 'SessionNotFound':
                     print(event['message']) 
-                    self.show_message_dialogue(event['message'])
+                    CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=event['message'], sound=True, option_1="Oh shit!")
                     self.set_home()
                     break
                 if event['errortype'] == 'RoomFull':
                     print(event['message'])
-                    self.show_message_dialogue(event['message'])
+                    CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=event['message'], sound=True, option_1="Oh shit!")
                     self.set_home()
                     break
             if event['type'] == 'started':
@@ -578,7 +592,7 @@ class App(customtkinter.CTk, AsyncCTk):
                 if event['from'] == 'server':
                     if event['role'] == 'host':
                         print('The host has been disconnected')
-                        self.show_message_dialogue('The host has been disconnected')
+                        CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='The host has been disconnected', sound=True, option_1="Oh shit!")
                         await asyncio.sleep(1)
                         self.tab_view.set("HOME")
                         self.set_current_tab(self.hometab)
@@ -590,13 +604,13 @@ class App(customtkinter.CTk, AsyncCTk):
                     elif event['role'] == 'member':
                         print('Participant disconnected')
                         if role == 'member':
-                            self.show_message_dialogue('You have been disconnected')
+                            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='You have been disconnected', sound=True, option_1="Oh Shit!")
                             await asyncio.sleep(1)
                             self.tab_view.set("HOME")
                             self.set_current_tab(self.hometab)
                             return
                         else:
-                            self.show_message_dialogue('The participant has been disconnected')
+                            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message='The participant has been disconnected', sound=True, option_1="Oh shit!")
                             
                 
 
