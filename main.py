@@ -19,9 +19,12 @@ from async_tkinter_loop import async_handler
 from async_tkinter_loop.mixins import AsyncCTk
 from CTkMessagebox import CTkMessagebox
 import pyperclip
+import dotenv
+import os
 
 
-WEBSOCKET_SERVER="ws://infinix-v4.duckdns.org:8080"
+dotenv.load_dotenv()
+WEBSOCKET_SERVER=os.getenv('WEBSOCKET_SERVER')
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 customtkinter.set_appearance_mode("Dark")
 customtkinter.set_default_color_theme("./themes/dark-blue.json") 
