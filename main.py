@@ -12,9 +12,10 @@ import websockets
 from async_tkinter_loop import async_handler
 from async_tkinter_loop.mixins import AsyncCTk
 from CTkMessagebox import CTkMessagebox
+import pyperclip
 
 
-WEBSOCKET_SERVER="ws://localhost:8080"
+WEBSOCKET_SERVER="ws://infinix-v4.duckdns.org:8080"
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 customtkinter.set_appearance_mode("Dark")
 customtkinter.set_default_color_theme("./themes/dark-blue.json") 
@@ -40,6 +41,7 @@ class App(customtkinter.CTk, AsyncCTk):
         self.normal_font = customtkinter.CTkFont(family="Ubuntu", size=18, weight="normal")
         self.btnfont=customtkinter.CTkFont(family="Ubuntu", size=16, weight="bold")
         self.total_message = 0
+        self.role = None
         
         
         ############################################### PYGAME MUSIC ###############################################
@@ -49,7 +51,10 @@ class App(customtkinter.CTk, AsyncCTk):
         self.music = pygame.mixer
         self.music.init()
         self.paused = False
-        
+        self.trumpetsound = self.music.Sound('./sounds/trumpets.mp3')
+        self.trumpetsound.set_volume(0.1)
+        self.levelsound = self.music.Sound('./sounds/level.mp3')
+        self.levelsound.set_volume(0.1)
         
          
         ############################################### DATA ###############################################
@@ -251,11 +256,14 @@ class App(customtkinter.CTk, AsyncCTk):
 
 
 
-        self.sessions_progressbutton = customtkinter.CTkButton(self.sessions, text="Start Session Timer", command=self.start_sessions_timer, font=customtkinter.CTkFont(family="Ubuntu", size=15, weight="bold"), corner_radius=8, border_color="#21568B", border_width=2,fg_color="gray13", hover_color="#21568B")
+        self.sessions_progressbutton = customtkinter.CTkButton(self.sessions, text="Start Session", command=self.start_sessions_timer, font=customtkinter.CTkFont(family="Ubuntu", size=15, weight="bold"), corner_radius=8, border_color="#21568B", border_width=2,fg_color="gray13", hover_color="#21568B")
         self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=10, sticky="ew", columnspan=8, rowspan=1)
         
+        if self.role == 'member':
+            self.sessions_progressbutton.configure(state="disabled", text="Ask the host to start a session")
+        
         self.sessions_progressbar = customtkinter.CTkProgressBar(self.sessions, orientation="horizontal", height=15)
-        self.sessions_progressbar.set(self.percent())
+        self.sessions_progressbar.set(0)
         self.sessions_progressbar.grid(row=1, column=0, pady=(0,0), padx=15, sticky="ew", columnspan=8, rowspan=1)
         
         
@@ -264,7 +272,10 @@ class App(customtkinter.CTk, AsyncCTk):
         self.sessions_frame.grid(row=2, column=0, sticky="nsew", padx=15,pady=(10,15), columnspan=8, rowspan=3)
         self.sessions_frame.grid_columnconfigure((0,1), weight=1)
         
-        self.send_area = customtkinter.CTkEntry(self.sessions, placeholder_text="Hello bhai kaisa hein bhai!", font=self.normal_font, corner_radius=50, height=60)
+        self.sessions_frame.bind_all("<Button-4>", lambda e: self.sessions_frame._parent_canvas.yview("scroll", -1, "units"))
+        self.sessions_frame.bind_all("<Button-5>", lambda e: self.sessions_frame._parent_canvas.yview("scroll", 1, "units"))
+        
+        self.send_area = customtkinter.CTkEntry(self.sessions, placeholder_text="Say Hello to your session partner!", font=self.normal_font, corner_radius=50, height=60)
         self.send_area.grid(row=5, column=0, pady=(0,15), padx=(50,10),  sticky="sew", columnspan=7, rowspan=1)
         self.send_button = customtkinter.CTkButton(self.sessions, text="+", command=self.add_own_message, font=customtkinter.CTkFont(family="Ubuntu", size=40), corner_radius=100, fg_color="black", width=5)
         self.send_button.grid(row=5, column=0, pady=(0,15), padx=(2.5,50), columnspan=8, sticky="se", rowspan=1)
@@ -340,9 +351,7 @@ class App(customtkinter.CTk, AsyncCTk):
                     save_config(self.donetasks)
                     self.progressbar.set(self.percent())
                     self.progresslabel.configure(text=f"↪ Your Progress ({self.donetasks['count']}/{self.donetasks['total']} completed)")
-                    effect2 = self.music.Sound('./sounds/trumpets.mp3')
-                    effect2.set_volume(0.1)
-                    effect2.play()
+                    self.trumpetsound.play()
                     
                 
     def delete_tasks(self):
@@ -388,9 +397,7 @@ class App(customtkinter.CTk, AsyncCTk):
     
         CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List.\nGo to To-Do Tab to view more!", sound=True, option_1="There we go!")
         
-        effect1 = self.music.Sound('./sounds/level.mp3')
-        effect1.set_volume(0.1)
-        effect1.play()
+        self.levelsound.play()
     
     
     
@@ -441,8 +448,8 @@ class App(customtkinter.CTk, AsyncCTk):
     @async_handler
     async def set_sessions(self):
         if not self.socket:
-            dialog = customtkinter.CTkInputDialog(text="Type 'start' to start or 'join'\nto join a live session.", title="LakshApp")
-            inp = dialog.get_input()
+            dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="Select 'Start' to host a session. If you have a valid session code, select 'Join'.", sound=True, option_1="Join", option_2="Start")
+            inp = dialog.get()
             if inp:
                 if inp.lower() == 'start':
                     dialog2 = customtkinter.CTkInputDialog(text="Enter your username\nfor the live session.", title="LakshApp")
@@ -493,6 +500,7 @@ class App(customtkinter.CTk, AsyncCTk):
     async def add_own_message(self):
         message = self.send_area.get()
         if message == '':
+            self.send_area.focus()
             return
         message_frame = customtkinter.CTkFrame(self.sessions_frame, corner_radius=18, fg_color="#14375e")
         message_frame.grid(row=self.total_message, column=0, sticky="new", padx=5,pady=5, columnspan=2, rowspan=1)
@@ -500,7 +508,9 @@ class App(customtkinter.CTk, AsyncCTk):
         
         message_label = customtkinter.CTkLabel(message_frame, text=f"[You]: {message}", font=customtkinter.CTkFont(family="Ubuntu", size=18, weight="bold"), fg_color="transparent", wraplength=680, justify="left")
         message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
-            
+        
+        self.sessions_frame.after(10, self.sessions_frame._parent_canvas.yview_moveto, 1.0)
+        
         self.total_message += 1
         
         data = {
@@ -509,7 +519,13 @@ class App(customtkinter.CTk, AsyncCTk):
             'message': message,
             'user': self.own_username
         }
-        await self.socket.send(json.dumps(data))
+        try:
+            await self.socket.send(json.dumps(data))
+        except:
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check your internet connection.", sound=True, option_1="Ah sad!")
+            await self.socket.close()
+            self.socket = None
+            self.set_home()
         self.send_area.delete(0, "end")
         
         
@@ -524,36 +540,84 @@ class App(customtkinter.CTk, AsyncCTk):
         message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
             
         self.total_message += 1
+        
+        self.sessions_frame.after(10, self.sessions_frame._parent_canvas.yview_moveto, 1.0)
     
     
     @async_handler
     async def start_sessions_timer(self):
-        dialog = customtkinter.CTkInputDialog(text="Type the length of session (in minutes)", title="LakshApp")
-        inp = dialog.get_input()
+        d = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="Select duration of session", sound=True, options=['30 Minutes', '45 Minutes', '1 Hour'])
+        if d.get() in ['30 Minutes', '45 Minutes', '1 Hour']:
+            event = {
+                'type': 'startsession',
+                'from': 'client',
+                'duration': d.get()
+            }
+            # await self.socket.send(json.dumps(event))
+            try:
+                await self.socket.send(json.dumps(event))
+            except:
+                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check your internet connection.", sound=True, option_1="Ah sad!")
+                await self.socket.close()
+                self.socket = None
+                self.set_home()
+        
+    
+    @async_handler
+    async def stop_sessions_timer(self):
+        dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Do you want to end this session?", sound=True, options=["I'm done", "Don't end it yet"])
+        if dialog.get() == "I'm done":
+            event = {
+                'type': 'stopsession',
+                'from': 'client'
+            }
+            try:
+                await self.socket.send(json.dumps(event))
+            except:
+                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check your internet connection.", sound=True, option_1="Ah sad!")
+                await self.socket.close()
+                self.socket = None
+                self.set_home()
+        elif dialog.get() == "Don't end it yet":
+            pass
     
     async def start_server(self, server_address, username):
-        async with websockets.connect(server_address) as socket:
-            event = {
-                'from': 'client',
-                'type': 'start',
-                'user': username
-            }
-            await asyncio.sleep(1)
-            await socket.send(json.dumps(event))
-            await asyncio.gather(self.receive_message(socket, 'host', username))
+        try:
+            async with websockets.connect(server_address) as socket:
+                event = {
+                    'from': 'client',
+                    'type': 'start',
+                    'user': username
+                }
+                await asyncio.sleep(1)
+                await socket.send(json.dumps(event))
+                self.role = 'host'
+                await asyncio.gather(self.receive_message(socket, 'host', username))
+        except:
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check your internet connection.", sound=True, option_1="Ah sad!")
+            await self.socket.close()
+            self.socket = None
+            self.set_home()
          
        
     async def join_server(self, server_address, code, username):
-        async with websockets.connect(server_address) as socket:
-            event = {
-                'from': 'client',
-                'type': 'join',
-                'code': code,
-                'user': username
-            }
-            await asyncio.sleep(1)
-            await socket.send(json.dumps(event)) 
-            await asyncio.gather(self.receive_message(socket, 'member', username))
+        try:
+            async with websockets.connect(server_address) as socket:
+                event = {
+                    'from': 'client',
+                    'type': 'join',
+                    'code': code,
+                    'user': username
+                }
+                await asyncio.sleep(1)
+                await socket.send(json.dumps(event)) 
+                self.role = 'member'
+                await asyncio.gather(self.receive_message(socket, 'member', username))
+        except:
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check your internet connection.", sound=True, option_1="Ah sad!")
+            await self.socket.close()
+            self.socket = None
+            self.set_home()
                 
                 
     async def receive_message(self, socket, role, username):
@@ -561,33 +625,54 @@ class App(customtkinter.CTk, AsyncCTk):
             event = json.loads(message)
             if event['type'] == 'error':
                 if event['errortype'] == 'SessionNotFound':
-                    print(event['message']) 
                     CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=event['message'], sound=True, option_1="Oh shit!")
                     self.set_home()
                     break
                 if event['errortype'] == 'RoomFull':
-                    print(event['message'])
                     CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=event['message'], sound=True, option_1="Oh shit!")
                     self.set_home()
                     break
             if event['type'] == 'started':
                 self.tab_view.set("SESSIONS")
                 self.set_current_tab(self.sessionstab)
-                await asyncio.sleep(2)
+                await asyncio.sleep(1)
                 print(f"Your code is: [{event['code']}]")
-                self.add_other_message(user='System', message=f"Your room's code is: [{event['code']}]")
+                pyperclip.copy(event['code'])
+                self.add_other_message(user='System', message=f"Your room's code is: [{event['code']}] | The code has been copied to your clipboard.")
                 self.socket = socket
             if event['type'] == 'joined':
                 self.tab_view.set("SESSIONS")
                 self.set_current_tab(self.sessionstab)
-                await asyncio.sleep(2)
+                await asyncio.sleep(1)
                 print(f"You joined {event['code']}")
-                self.add_other_message(user='System', message=f"You joined {event['code']}")
+                pyperclip.copy(event['code'])
+                self.add_other_message(user='System', message=f"You joined {event['code']} | The code has been copied to your clipboard.")
                 self.socket = socket
+                self.sessions_progressbutton.configure(state="disabled", text="Ask the host to start a session")
             if event['type'] == 'message':
-                print(event['message'])
                 if event['user'] != username:
                     self.add_other_message(user=event['user'], message=event['message'])
+            if event['type'] == 'startsessionconfirmed':
+                duration = event['duration']
+                time = self.convert_time(duration)
+                self.sessions_progressbar_task = asyncio.create_task(self.update_sessions_progressbar(10))
+                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f'Session started for {duration}!\nKeep Grinding!', sound=True, option_1="Let's do this!")
+                self.levelsound.play()
+                if self.role == 'member':
+                    self.sessions_progressbutton.configure(fg_color="#21568B", hover_color="gray13", state="disabled", text="Session started by the host")
+                else:
+                    self.sessions_progressbutton.configure(fg_color="#21568B", hover_color="gray13", text="Stop Session", command=self.stop_sessions_timer)
+                
+            if event['type'] == 'stopsessionconfirmed':
+                self.sessions_progressbar_task.cancel()
+                await asyncio.sleep(1)
+                self.sessions_progressbar.set(0)
+                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=f'Session stopped by the host!\nSee you soon!', sound=True, option_1="Lost it!")
+                if self.role == 'member':
+                    self.sessions_progressbutton.configure(hover_color="#21568B", fg_color="gray13", state="disabled", text="Ask the host to start a session")
+                else:
+                    self.sessions_progressbutton.configure(hover_color="#21568B", fg_color="gray13", text="Start Session", command=self.start_sessions_timer)
+                
             if event['type'] == 'disconnected':
                 if event['from'] == 'server':
                     if event['role'] == 'host':
@@ -611,8 +696,47 @@ class App(customtkinter.CTk, AsyncCTk):
                             return
                         else:
                             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message='The participant has been disconnected', sound=True, option_1="Oh shit!")
-                            
-                
+                                    
+
+    async def update_sessions_progressbar(self, time):
+        cur = 1
+        while True:
+            if cur/time == 1:
+                self.sessions_progressbar.set(0)
+                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f'Session completed! Well done comrade!', sound=True, option_1="Less gooo!")
+                self.trumpetsound.play()
+                if self.role == 'member':
+                    self.sessions_progressbutton.configure(hover_color="#21568B", fg_color="gray13", state="disabled", text="Ask the host to start a session")
+                else:
+                    self.sessions_progressbutton.configure(hover_color="#21568B", fg_color="gray13", text="Start Session", command=self.start_sessions_timer)
+                return
+            self.sessions_progressbar.set(cur/time)
+            cur += 1
+            await asyncio.sleep(1)
+        
+    def convert_time(self, time):
+        time = time.lower()
+        if 'minute' in time:
+            return int(int(time.split(' ')[0])*60)
+        if 'hour' in time:
+            return int(int(time.split(' ')[0])*3600)
+    
+    
+    
+    @async_handler
+    async def close_confirmation(self):
+        dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Done for the day? Hope to see you soon!", sound=True, option_1="Exit", option_2="Keep Grinding")
+        if dialog.get() == "Exit":
+            if self.socket:
+                try:
+                    await self.socket.close()
+                except:
+                    pass
+            self.destroy()
+        else:
+            pass
+        
+        
 
 ############################################### TO-DO FRAME ###############################################
 
@@ -624,6 +748,8 @@ class ToDoFrame(customtkinter.CTkScrollableFrame):
         
         self.donetasks = donetasks
         self.grid_columnconfigure(0, weight=1)
+        self.bind_all("<Button-4>", lambda e: self._parent_canvas.yview("scroll", -1, "units"))
+        self.bind_all("<Button-5>", lambda e: self._parent_canvas.yview("scroll", 1, "units"))
         self.values = values
         self.checkboxes = []
 
@@ -646,7 +772,7 @@ class ToDoFrame(customtkinter.CTkScrollableFrame):
             if (checkbox.get() == "on" or checkbox.get() == "1" or checkbox.get() == 1) and self.donetasks["pendingtasks"][checkbox.cget('text')] == 0:
                 checked_checkboxes.append(checkbox)
         return checked_checkboxes
-        
+    
         
         
 ############################################### MESSAGE DIALOGUE ###############################################
@@ -670,7 +796,7 @@ class MessageDialogue(customtkinter.CTkToplevel):
 app = App()
 
 def enter(event):
-    if app.tab_view.get() == 'TO-DO':
+    if app.tab_view.get() == 'HOME':
         app.add_todo_event()
     if app.tab_view.get() == 'SESSIONS':
         app.add_own_message()
@@ -680,5 +806,7 @@ def ctrla(event):
     
 app.bind('<Return>', enter)
 app.bind('<Control-a>', ctrla)
+
+app.protocol("WM_DELETE_WINDOW", app.close_confirmation)
 
 app.async_mainloop()

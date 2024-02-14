@@ -25,8 +25,23 @@ ROOMS = {}
 #     'RoomFull'
 # ]
 
-# EVENTS = ['start', 'started', 'join', 'joined', 'message', 'disconnected']
+# EVENTS = ['start', 'started', 'join', 'joined', 'message', 'disconnected', 'startsession', 'stopsession','startsessionconfirmed', 'stopsessionconfirmed']
 
+async def start_timer(clients, duration):
+    event = {
+        'type': 'startsessionconfirmed',
+        'from': 'server',
+        'duration': duration
+    }
+    websockets.broadcast(clients, json.dumps(event))
+
+async def stop_timer(clients):
+    event = {
+        'type': 'stopsessionconfirmed',
+        'from': 'server'
+    }
+    websockets.broadcast(clients, json.dumps(event))
+    
 async def error(socket, errortype, msg):
     event = {
         'type': 'error',
@@ -63,6 +78,15 @@ async def start(socket, host):
                 }
                 websockets.broadcast(list(ROOMS[join_code].values()), json.dumps(forward_event))
                 
+            if message['type'] == 'startsession':
+                duration = message['duration']
+                print(f"[{join_code}] Session started: {duration}")
+                await start_timer(list(ROOMS[join_code].values()), duration)
+                
+            if message['type'] == 'stopsession':
+                print(f"[{join_code}] Session stopped")
+                await stop_timer(list(ROOMS[join_code].values()))
+                
     finally:
         event = {
             'type': 'disconnected',
@@ -75,7 +99,7 @@ async def start(socket, host):
         print(f"[{join_code}] | Host disconnected")
         del ROOMS[join_code]
     
-    
+
     
 async def join(socket, join_code, member):
     try:
