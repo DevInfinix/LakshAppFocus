@@ -1,3 +1,9 @@
+"""
+Advanced TO-DOs integrated with Lice Sessions for Focus and Productivity
+Author: DevInfinix
+License: Apache-2.0
+"""
+
 import asyncio
 import websockets
 import json

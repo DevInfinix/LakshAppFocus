@@ -1,3 +1,9 @@
+"""
+Advanced TO-DOs integrated with Lice Sessions for Focus and Productivity
+Author: DevInfinix
+License: Apache-2.0
+"""
+
 import customtkinter
 import json
 import random
@@ -809,4 +815,7 @@ app.bind('<Control-a>', ctrla)
 
 app.protocol("WM_DELETE_WINDOW", app.close_confirmation)
 
+app.iconify()
+app.update()
+app.deiconify()
 app.async_mainloop()
