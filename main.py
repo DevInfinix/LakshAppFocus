@@ -8,15 +8,15 @@ import customtkinter as ctk
 import tkinter
 from tkinter import filedialog
 from modules.CTkDataVisualizingWidgets import * #https://github.com/ZikPin/CTkDataVisualizingWidgets
+from modules.CTkScrollableDropdown import *
 from CTkMessagebox import CTkMessagebox
 from async_tkinter_loop import async_handler
 from async_tkinter_loop.mixins import AsyncCTk
 from modules.database_handler import Database
 
-import sqlite3
+import pytube
 import pyperclip
 import pygame
-import aiofiles
 import json
 import random
 
@@ -181,12 +181,12 @@ class App(ctk.CTk, AsyncCTk):
         
         
         self.quotes_label = ctk.CTkLabel(self.quotes_frame, text=f"“{self.quotes[self.quote_no]['text']}”", font=HELVETICA(weight="bold"), fg_color="transparent", wraplength=780, justify="center")
-        self.quotes_label.grid(row=0, column=0, pady=(60,5), padx=20, sticky="new", columnspan=2)
+        self.quotes_label.grid(row=0, column=0, pady=(60,5), padx=20, sticky="nsew", columnspan=2)
         self.quotes_author_label = ctk.CTkLabel(self.quotes_frame, text=f"{self.quotes[self.quote_no]['author']}", font=HELVETICA(size=20, weight="normal"), fg_color="transparent")
-        self.quotes_author_label.grid(row=1, column=0, pady=(0,0), padx=120, columnspan=8, sticky="new")
+        self.quotes_author_label.grid(row=1, column=0, pady=(0,0), padx=120, columnspan=8, sticky="nsew")
         
         self.change_quote_btn = ctk.CTkButton(self.quotes_frame, text="Refresh Quotes", command=self.change_quote_event, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
-        self.change_quote_btn.grid(row=2, column=0, pady=(50,60), padx=120, columnspan=2)
+        self.change_quote_btn.grid(row=2, column=0, pady=(40,40), padx=120, columnspan=2)
         
         
         
@@ -194,10 +194,22 @@ class App(ctk.CTk, AsyncCTk):
         
         
         
+        values = []
+        for val in self.db.get_total_tasks():
+            if val['project'] not in values:
+                values.append(val['project'])
+        if values == []:
+            values.append("Default Project")
+
+        self.home_projectselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=UBUNTU(), dropdown_font=UBUNTU(), dynamic_resizing=False, anchor="w")
+        self.home_projectselector.grid(row=3, column=0, pady=(20,0), padx=35, sticky="ew", columnspan=3)
+        self.home_projectselector.set("Default Project")
+        self.home_projectselector_dropdown = CTkScrollableDropdown(self.home_projectselector, values=values, alpha=0.9, justify="left")
+        
         self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
-        self.entry_todo.grid(row=3, column=0, pady=(60,0), padx=(20,0),  sticky="ew", columnspan=7)
+        self.entry_todo.grid(row=4, column=0, pady=(20,5), padx=(20,0),  sticky="ew", columnspan=7)
         self.add_todo = ctk.CTkButton(self.home, text="+", command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="black", width=5)
-        self.add_todo.grid(row=3, column=0, pady=(60,0), padx=(2,20), columnspan=8, sticky="e")
+        self.add_todo.grid(row=4, column=0, pady=(20,0), padx=(10,20), columnspan=8, sticky="e")
         
         
         
@@ -207,9 +219,10 @@ class App(ctk.CTk, AsyncCTk):
         
         self.progressbar = ctk.CTkProgressBar(self.home, orientation="horizontal", height=15)
         self.progressbar.set(self.percent())
-        self.progressbar.grid(row=4, column=0, pady=(20,5), padx=(45,25), sticky="ew", columnspan=8)
+        self.progressbar.grid(row=5, column=0, pady=(10,5), padx=(45,35), sticky="ew", columnspan=8)
+        
         self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)", font=UBUNTU(size=18, weight="normal"), justify="right")
-        self.progresslabel.grid(row=5, column=0, pady=0, padx=25, sticky="e", columnspan=8)
+        self.progresslabel.grid(row=6, column=0, pady=0, padx=25, sticky="e", columnspan=8)
         
         
 
@@ -217,6 +230,7 @@ class App(ctk.CTk, AsyncCTk):
         
 ############################################### TO-DO TAB ###############################################
         
+
 
         self.todo.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
         self.todo.grid_rowconfigure((0,1),weight=1)
@@ -318,6 +332,10 @@ class App(ctk.CTk, AsyncCTk):
             self.paused = True
             self.music.music.pause()
     
+    def play_youtube(self):
+        dialog = ctk.CTkInputDialog(text="Search the perfect ambience on YouTube.", title="LakshApp")
+        inp = dialog.get_input()
+        
     def play(self):
         if not self.paused:   
             file_path = filedialog.askopenfilename(title="Select an ambient song", filetypes=(("Audio Files", ".wav .ogg .mp3"),   ("All Files", "*.*")))
