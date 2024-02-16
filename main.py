@@ -349,8 +349,6 @@ class App(ctk.CTk, AsyncCTk):
     async def mark_as_done(self):
         await self.refresh_cache()
         checkboxes = self.scrollable_checkbox_frame.get(self.donetasks)
-        #for i in self.scrollable_checkbox_frame.checkboxes:
-            #print(i.cget("text"), i.get(), self.donetasks['pendingtasks'])
         if checkboxes == []:
             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="Please select a task first.", sound=True, option_1="Cool")
         else:
@@ -491,9 +489,7 @@ class App(ctk.CTk, AsyncCTk):
     def select_all(self):
         if self.tab_view.get() == 'TO-DO':
             self.entry_todo.select_range(0, 'end')
-            # move cursor to the end
             self.entry_todo.icursor('end')
-            #stop propagation
             return 'break'
         if self.tab_view.get() == 'SESSIONS':
             self.send_area.select_range(0, 'end')
@@ -579,7 +575,6 @@ class App(ctk.CTk, AsyncCTk):
                 'from': 'client',
                 'duration': d.get()
             }
-            # await self.socket.send(json.dumps(event))
             try:
                 await self.socket.send(json.dumps(event))
             except:
@@ -764,7 +759,6 @@ class ToDoFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, values):
         super().__init__(master, label_text="⇲ MY TO-DO LIST", label_fg_color="#33414d", border_width=2, border_color="black", corner_radius=18, fg_color="gray4", label_font=ctk.CTkFont(family="Ubuntu", size=16, weight="bold"))
 
-        #self.grid_columnconfigure(0, weight=1)
         self.values = values
         self.checkboxes = []
 
