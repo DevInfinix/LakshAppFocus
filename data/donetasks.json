@@ -1,7 +1,10 @@
 {
-    "count": 0,
-    "total": 0,
-    "pendingtasks": {},
+    "count": 1,
+    "total": 2,
+    "pendingtasks": {
+        "Physics - Thermodynamics": 1,
+        "Maths": 0
+    },
     "dates": [
         [
             10,

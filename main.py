@@ -95,13 +95,13 @@ class App(ctk.CTk, AsyncCTk):
         
         
         
-        self.hometab = ctk.CTkButton(master=self.sidebar_frame, text=" Home ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_home, font=self.btnfont)
+        self.hometab = ctk.CTkButton(master=self.sidebar_frame, text=" Home ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_home, font=UBUNTU())
         self.hometab.grid(padx=40, pady=8, row=1, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.todotab = ctk.CTkButton(master=self.sidebar_frame, text=" To-Do ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_todo, font=self.btnfont)
+        self.todotab = ctk.CTkButton(master=self.sidebar_frame, text=" To-Do ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_todo, font=UBUNTU())
         self.todotab.grid(padx=40, pady=8, row=2, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.statstab = ctk.CTkButton(master=self.sidebar_frame, text=" My Progress ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_stats, font=self.btnfont)
+        self.statstab = ctk.CTkButton(master=self.sidebar_frame, text=" My Progress ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_stats, font=UBUNTU())
         self.statstab.grid(padx=40, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.sessionstab = ctk.CTkButton(master=self.sidebar_frame, text=" Live Sessions ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_sessions, font=self.btnfont)
+        self.sessionstab = ctk.CTkButton(master=self.sidebar_frame, text=" Live Sessions ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_sessions, font=UBUNTU())
         self.sessionstab.grid(padx=40, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
         
         
@@ -193,7 +193,7 @@ class App(ctk.CTk, AsyncCTk):
         
         self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
         self.entry_todo.grid(row=3, column=0, pady=(60,0), padx=(20,0),  sticky="ew", columnspan=7)
-        self.add_todo = ctk.CTkButton(self.home, text="+", command=self.add_todo_event, font=UBUNTU(size=15, weight="normal"), corner_radius=100, fg_color="black", width=5)
+        self.add_todo = ctk.CTkButton(self.home, text="+", command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="black", width=5)
         self.add_todo.grid(row=3, column=0, pady=(60,0), padx=(2,20), columnspan=8, sticky="e")
         
         
@@ -560,7 +560,10 @@ class App(ctk.CTk, AsyncCTk):
     
     
     async def close_socket(self):
-        await self.socket.close()
+        try:
+            await self.socket.close()
+        except:
+            pass
         self.socket = None
         self.set_home()
         
