@@ -5,23 +5,28 @@ License: Apache-2.0
 """
 
 import customtkinter as ctk
+import tkinter
+from tkinter import filedialog
+from modules.CTkDataVisualizingWidgets import * #https://github.com/ZikPin/CTkDataVisualizingWidgets
+from CTkMessagebox import CTkMessagebox
+from async_tkinter_loop import async_handler
+from async_tkinter_loop.mixins import AsyncCTk
+
+import pyperclip
+import pygame
+import aiofiles
 import json
 import random
-import tkinter
-import pygame
+
+import os
 from os import environ
-from tkinter import filedialog
-from modules.date_visualizer import CTkCalendarStat #https://github.com/ZikPin/CTkDataVisualizingWidgets
+import dotenv
 import datetime
 import asyncio
 import websockets
-from async_tkinter_loop import async_handler
-from async_tkinter_loop.mixins import AsyncCTk
-from CTkMessagebox import CTkMessagebox
-import pyperclip
-import dotenv
-import os
-import aiofiles
+
+from themes.colors import *
+from themes.fonts import *
 
 
 dotenv.load_dotenv()
@@ -29,10 +34,6 @@ WEBSOCKET_SERVER=os.getenv('WEBSOCKET_SERVER')
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("./themes/dark-blue.json") 
-
-
-THEME_BLUE="#21568B"
-THEME_RED="#731a1a"
         
 
 class App(ctk.CTk, AsyncCTk):
@@ -47,8 +48,6 @@ class App(ctk.CTk, AsyncCTk):
         self.grid_columnconfigure((1,2,3), weight=1)
         self.grid_columnconfigure(0, weight=0)
         self.grid_rowconfigure(0, weight=1)
-        self.normal_font = ctk.CTkFont(family="Ubuntu", size=18, weight="normal")
-        self.btnfont=ctk.CTkFont(family="Ubuntu", size=16, weight="bold")
         self.total_message = 0
         self.role = None
         
@@ -87,7 +86,7 @@ class App(ctk.CTk, AsyncCTk):
         self.sidebar_frame.grid_columnconfigure((0,1), weight=1)
         self.sidebar_frame.grid_rowconfigure((0,1,2,3,4,5), weight=1)
         
-        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="LakshApp", font=ctk.CTkFont(family="Ubuntu", size=28, weight="bold"), text_color="#91b1cc", justify="center")
+        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="LakshApp", font=UBUNTU(size=28), text_color=LIGHT_BLUE, justify="center")
         self.logo_label.grid(row=0, column=0, padx=40, pady=(100,60),columnspan=2, rowspan=1, sticky="ew")
         
         
@@ -112,7 +111,7 @@ class App(ctk.CTk, AsyncCTk):
         self.switch_frame.grid_rowconfigure(0, weight=1)
         
         self.switch_var = ctk.StringVar(value="off")
-        self.switch = ctk.CTkSwitch(self.switch_frame, text="Ambient Mode", onvalue="on", offvalue="off", variable=self.switch_var, command=self.switch_event, switch_height=15, switch_width=40, font=ctk.CTkFont(family="Ubuntu", size=14, weight="bold"))
+        self.switch = ctk.CTkSwitch(self.switch_frame, text="Ambient Mode", onvalue="on", offvalue="off", variable=self.switch_var, command=self.switch_event, switch_height=15, switch_width=40, font=UBUNTU(size=14))
         self.switch.grid(row=0, column=0, pady=10, padx=10, sticky="ew", columnspan=1)
         
         
@@ -178,12 +177,12 @@ class App(ctk.CTk, AsyncCTk):
         
         
         
-        self.quotes_label = ctk.CTkLabel(self.quotes_frame, text=f"“{self.quotes[self.quote_no]['text']}”", font=ctk.CTkFont(family="Helvetica", size=30, weight="bold", slant="italic"), fg_color="transparent", wraplength=780, justify="center")
+        self.quotes_label = ctk.CTkLabel(self.quotes_frame, text=f"“{self.quotes[self.quote_no]['text']}”", font=HELVETICA(weight="bold"), fg_color="transparent", wraplength=780, justify="center")
         self.quotes_label.grid(row=0, column=0, pady=(60,5), padx=20, sticky="new", columnspan=2)
-        self.quotes_author_label = ctk.CTkLabel(self.quotes_frame, text=f"{self.quotes[self.quote_no]['author']}", font=ctk.CTkFont(family="Helvetica", size=20, weight="normal", slant="italic"), fg_color="transparent")
+        self.quotes_author_label = ctk.CTkLabel(self.quotes_frame, text=f"{self.quotes[self.quote_no]['author']}", font=HELVETICA(size=20, weight="normal"), fg_color="transparent")
         self.quotes_author_label.grid(row=1, column=0, pady=(0,0), padx=120, columnspan=8, sticky="new")
         
-        self.change_quote_btn = ctk.CTkButton(self.quotes_frame, text="Refresh Quotes", command=self.change_quote_event, font=ctk.CTkFont(family="Ubuntu", size=15, weight="bold"), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
+        self.change_quote_btn = ctk.CTkButton(self.quotes_frame, text="Refresh Quotes", command=self.change_quote_event, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
         self.change_quote_btn.grid(row=2, column=0, pady=(50,60), padx=120, columnspan=2)
         
         
@@ -192,10 +191,10 @@ class App(ctk.CTk, AsyncCTk):
         
         
         
-        self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=self.normal_font, corner_radius=50, height=60)
-        self.entry_todo.grid(row=3, column=0, pady=(60,0), padx=(50,10),  sticky="ew", columnspan=7)
-        self.add_todo = ctk.CTkButton(self.home, text="+", command=self.add_todo_event, font=ctk.CTkFont(family="Ubuntu", size=40), corner_radius=100, fg_color="black", width=5)
-        self.add_todo.grid(row=3, column=0, pady=(60,0), padx=(2.5,50), columnspan=8, sticky="e")
+        self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
+        self.entry_todo.grid(row=3, column=0, pady=(60,0), padx=(20,0),  sticky="ew", columnspan=7)
+        self.add_todo = ctk.CTkButton(self.home, text="+", command=self.add_todo_event, font=UBUNTU(size=15, weight="normal"), corner_radius=100, fg_color="black", width=5)
+        self.add_todo.grid(row=3, column=0, pady=(60,0), padx=(2,20), columnspan=8, sticky="e")
         
         
         
@@ -205,9 +204,9 @@ class App(ctk.CTk, AsyncCTk):
         
         self.progressbar = ctk.CTkProgressBar(self.home, orientation="horizontal", height=15)
         self.progressbar.set(self.percent())
-        self.progressbar.grid(row=4, column=0, pady=(20,5), padx=(80,130), sticky="ew", columnspan=8)
-        self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.donetasks['count']}/{self.donetasks['total']} completed)", font=self.normal_font, justify="right")
-        self.progresslabel.grid(row=5, column=0, pady=0, padx=10, sticky="e", columnspan=8)
+        self.progressbar.grid(row=4, column=0, pady=(20,5), padx=(45,25), sticky="ew", columnspan=8)
+        self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.donetasks['count']}/{self.donetasks['total']} completed)", font=UBUNTU(size=18, weight="normal"), justify="right")
+        self.progresslabel.grid(row=5, column=0, pady=0, padx=25, sticky="e", columnspan=8)
         
         
 
@@ -230,7 +229,7 @@ class App(ctk.CTk, AsyncCTk):
         self.button = ctk.CTkButton(self.todo, text="🗹 | Mark as Completed", command=self.mark_as_done)
         self.button.grid(row=1, column=0, padx=70, pady=(20,0), sticky="ew", columnspan=8)        
         
-        self.button = ctk.CTkButton(self.todo, text="𐄂 | Delete all Tasks", command=self.delete_tasks, fg_color=THEME_RED, hover_color="red")
+        self.button = ctk.CTkButton(self.todo, text="𐄂 | Delete all Tasks", command=self.delete_tasks, fg_color=THEME_RED, hover_color=RED)
         self.button.grid(row=2, column=0, padx=70, pady=(10,50), sticky="ew", columnspan=8) 
         
         
@@ -242,18 +241,18 @@ class App(ctk.CTk, AsyncCTk):
         self.stats.grid_rowconfigure(1,weight=1)
         
         
-        self.stats_label = ctk.CTkLabel(self.stats, text=f"HERE's WHAT I ACHIEVED!", font=ctk.CTkFont(family="Ubuntu", size=30, weight="bold"), fg_color="transparent", wraplength=780, justify="center")
+        self.stats_label = ctk.CTkLabel(self.stats, text=f"HERE's WHAT I ACHIEVED!", font=UBUNTU(size=30), fg_color="transparent", wraplength=780, justify="center")
         self.stats_label.grid(row=0, column=0, pady=(20,5), padx=60, sticky="new", columnspan=2)
         dates = self.donetasks['dates']
         if dates == []:
             values = {}
         else:
             values = {tuple(val): 10 for val in dates}
-            self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color="white",
-                                fg_color="#020317", title_bar_border_width=2, title_bar_border_color="gray80",
-                                title_bar_fg_color="#020F43", calendar_fg_color="#020F43", corner_radius=30,
-                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color="white",
-                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", "red"]
+            self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color=WHITE,
+                                fg_color=NAVY_BLUE_DARK, title_bar_border_width=2, title_bar_border_color="gray80",
+                                title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
+                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color=WHITE,
+                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
                     )
             self.calendar.grid(row=1, column=0, pady=(60,60), padx=60, sticky="new", columnspan=2)
 
@@ -266,11 +265,11 @@ class App(ctk.CTk, AsyncCTk):
         self.sessions.grid_rowconfigure((0,1,2,3,4,5,6),weight=1)
 
 
-        self.sessions_progressbutton = ctk.CTkButton(self.sessions, text="Start Session", command=self.start_sessions_timer, font=ctk.CTkFont(family="Ubuntu", size=15, weight="bold"), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
+        self.sessions_progressbutton = ctk.CTkButton(self.sessions, text="Start Session", command=self.start_sessions_timer, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
         self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=(10, 0), sticky="ew", columnspan=6, rowspan=1)
         
         
-        self.sessions_leavebutton = ctk.CTkButton(self.sessions, text="⍇ Leave Room", command=self.leavesession, font=ctk.CTkFont(family="Ubuntu", size=15, weight="bold"), corner_radius=8, border_color="red", border_width=2,fg_color=THEME_RED, hover_color="red")
+        self.sessions_leavebutton = ctk.CTkButton(self.sessions, text="⍇ Leave Room", command=self.leavesession, font=UBUNTU(size=15), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
         self.sessions_leavebutton.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="e", columnspan=8, rowspan=1)
             
         
@@ -282,7 +281,7 @@ class App(ctk.CTk, AsyncCTk):
         
         if self.role == 'member':
             self.sessions_progressbutton.destroy()
-            self.sessions_progressbutton = ctk.CTkButton(self.sessions, state="disabled", text="The host can start a session", font=ctk.CTkFont(family="Ubuntu", size=15, weight="bold"), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
+            self.sessions_progressbutton = ctk.CTkButton(self.sessions, state="disabled", text="The host can start a session", font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
             self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=(10, 0), sticky="ew", columnspan=6, rowspan=1)
         
         
@@ -293,9 +292,9 @@ class App(ctk.CTk, AsyncCTk):
         self.sessions_frame.bind_all("<Button-4>", lambda e: self.sessions_frame._parent_canvas.yview("scroll", -1, "units"))
         self.sessions_frame.bind_all("<Button-5>", lambda e: self.sessions_frame._parent_canvas.yview("scroll", 1, "units"))
         
-        self.send_area = ctk.CTkEntry(self.sessions, placeholder_text="Say Hello to your session partner!", font=self.normal_font, corner_radius=50, height=60)
+        self.send_area = ctk.CTkEntry(self.sessions, placeholder_text="Say Hello to your session partner!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
         self.send_area.grid(row=6, column=0, pady=(0,8), padx=(15,15),  sticky="sew", columnspan=7, rowspan=1)
-        self.send_button = ctk.CTkButton(self.sessions, text="➤", command=self.add_own_message, font=ctk.CTkFont(family="Ubuntu", size=30), corner_radius=100, fg_color="transparent", width=2, height=60, hover_color="gray4")
+        self.send_button = ctk.CTkButton(self.sessions, text="➤", command=self.add_own_message, font=UBUNTU(size=30, weight="normal"), corner_radius=100, fg_color="transparent", width=2, height=60, hover_color="gray4")
         self.send_button.grid(row=6, column=0, pady=(0,8), padx=(15,15), columnspan=8, sticky="se", rowspan=1)
         
         
@@ -443,11 +442,11 @@ class App(ctk.CTk, AsyncCTk):
         else:
             values = {tuple(val): 10 for val in dates}
             self.calendar.destroy()
-            self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color="white",
-                                fg_color="#020317", title_bar_border_width=2, title_bar_border_color="gray80",
-                                title_bar_fg_color="#020F43", calendar_fg_color="#020F43", corner_radius=30,
-                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color="white",
-                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", "red"]
+            self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color=WHITE,
+                                fg_color=NAVY_BLUE, title_bar_border_width=2, title_bar_border_color="gray80",
+                                title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
+                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color=WHITE,
+                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
                     )
             self.calendar.grid(row=1, column=0, pady=(60,60), padx=60, sticky="new", columnspan=2)
             self.tab_view.set("STATS")
@@ -524,7 +523,7 @@ class App(ctk.CTk, AsyncCTk):
         message_frame.grid(row=self.total_message, column=0, sticky="new", padx=5,pady=5, columnspan=2, rowspan=1)
         message_frame.grid_columnconfigure((0,1), weight=1)
         
-        message_label = ctk.CTkLabel(message_frame, text=f"[You]: {message}", font=ctk.CTkFont(family="Ubuntu", size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
+        message_label = ctk.CTkLabel(message_frame, text=f"[You]: {message}", font=UBUNTU(size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
         message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
         
         self.sessions_frame.after(10, self.sessions_frame._parent_canvas.yview_moveto, 1.0)
@@ -552,7 +551,7 @@ class App(ctk.CTk, AsyncCTk):
         message_frame.grid(row=self.total_message, column=0, sticky="new", padx=5,pady=5, columnspan=2, rowspan=1)
         message_frame.grid_columnconfigure((0,1), weight=1)
         
-        message_label = ctk.CTkLabel(message_frame, text=f"[{user}]: {message}", font=ctk.CTkFont(family="Ubuntu", size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
+        message_label = ctk.CTkLabel(message_frame, text=f"[{user}]: {message}", font=UBUNTU(size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
         message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
             
         self.total_message += 1
@@ -672,9 +671,9 @@ class App(ctk.CTk, AsyncCTk):
                 CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f'Session started for {duration}!\nKeep Grinding!', sound=True, option_1="Let's do this!")
                 self.levelsound.play()
                 if self.role == 'member':
-                    self.sessions_progressbutton.configure(fg_color=THEME_RED, hover_color="red", border_color="red", state="disabled", text="Session started by the host")
+                    self.sessions_progressbutton.configure(fg_color=THEME_RED, hover_color=RED, border_color=RED, state="disabled", text="Session started by the host")
                 else:
-                    self.sessions_progressbutton.configure(fg_color=THEME_RED, hover_color="red", border_color="red", text="Stop Session", command=self.stop_sessions_timer)
+                    self.sessions_progressbutton.configure(fg_color=THEME_RED, hover_color=RED, border_color=RED, text="Stop Session", command=self.stop_sessions_timer)
                 
             if event['type'] == 'stopsessionconfirmed':
                 self.sessions_progressbar_task.cancel()
@@ -726,6 +725,8 @@ class App(ctk.CTk, AsyncCTk):
             self.sessions_progressbar.set(cur/time)
             cur += 1
             await asyncio.sleep(1)
+            
+        
         
     def convert_time(self, time):
         time = time.lower()
@@ -757,7 +758,7 @@ class App(ctk.CTk, AsyncCTk):
 
 class ToDoFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, values):
-        super().__init__(master, label_text="⇲ MY TO-DO LIST", label_fg_color="#33414d", border_width=2, border_color="black", corner_radius=18, fg_color="gray4", label_font=ctk.CTkFont(family="Ubuntu", size=16, weight="bold"))
+        super().__init__(master, label_text="⇲ MY TO-DO LIST", label_fg_color=DULL_BLUE, border_width=2, border_color=BLACK, corner_radius=18, fg_color="gray4", label_font=UBUNTU(size=15))
 
         self.values = values
         self.checkboxes = []
