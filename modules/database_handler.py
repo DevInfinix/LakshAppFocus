@@ -22,14 +22,22 @@ class Database:
         self.cursor.execute('''INSERT INTO tasks (task_name, project, status, day, month, year)
                                VALUES (?, ?, ?, ?, ?, ?)''', (task_name, project, status, day, month, year))
         self.conn.commit()
+        return self.cursor.lastrowid
 
     def delete_todo(self, task_id):
         self.cursor.execute('''DELETE FROM tasks WHERE id = ?''', (task_id,))
         self.conn.commit()
+        return self.cursor.lastrowid
 
+    def delete_all_todos(self):
+        self.cursor.execute('''DELETE FROM tasks''')
+        self.conn.commit()
+        return self.cursor.lastrowid
+        
     def update_todo_status(self, task_id, status):
         self.cursor.execute('''UPDATE tasks SET status = ? WHERE id = ?''', (status, task_id))
         self.conn.commit()
+        return self.cursor.lastrowid
 
     def search_todo_by_project(self, project):
         self.cursor.execute('''SELECT * FROM tasks WHERE project = ?''', (project,))
@@ -42,9 +50,17 @@ class Database:
     def get_completed_tasks(self):
         self.cursor.execute('''SELECT * FROM tasks WHERE status = ?''', (True,))
         return [dict(row) for row in self.cursor.fetchall()]
+    
+    def get_total_tasks(self):
+        self.cursor.execute('''SELECT * FROM tasks''')
+        return [dict(row) for row in self.cursor.fetchall()]
 
-    def get_total_tasks_done(self):
+    def get_completed_tasks_count(self):
         self.cursor.execute('''SELECT COUNT(*) FROM tasks WHERE status = ?''', (True,))
+        return self.cursor.fetchone()[0]
+    
+    def get_total_tasks_count(self):
+        self.cursor.execute('''SELECT COUNT(*) FROM tasks''')
         return self.cursor.fetchone()[0]
 
     def __del__(self):

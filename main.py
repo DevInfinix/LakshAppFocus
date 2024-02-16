@@ -11,7 +11,9 @@ from modules.CTkDataVisualizingWidgets import * #https://github.com/ZikPin/CTkDa
 from CTkMessagebox import CTkMessagebox
 from async_tkinter_loop import async_handler
 from async_tkinter_loop.mixins import AsyncCTk
+from modules.database_handler import Database
 
+import sqlite3
 import pyperclip
 import pygame
 import aiofiles
@@ -65,15 +67,16 @@ class App(ctk.CTk, AsyncCTk):
         self.levelsound.set_volume(0.1)
         
          
-        ############################################### DATA ###############################################
+        ############################################### DATABASE ###############################################
         
         
         
         with open("./data/quotes.json","r") as f:
             self.quotes = json.load(f)
-        with open("./data/donetasks.json","r") as f:
-            self.donetasks = json.load(f)
         self.quote_no = (random.randint(0, len(self.quotes)) - 1)
+        
+        self.db = Database('./data/database.db')
+        self.db.create_table()
         
         
         
@@ -205,7 +208,7 @@ class App(ctk.CTk, AsyncCTk):
         self.progressbar = ctk.CTkProgressBar(self.home, orientation="horizontal", height=15)
         self.progressbar.set(self.percent())
         self.progressbar.grid(row=4, column=0, pady=(20,5), padx=(45,25), sticky="ew", columnspan=8)
-        self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.donetasks['count']}/{self.donetasks['total']} completed)", font=UBUNTU(size=18, weight="normal"), justify="right")
+        self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)", font=UBUNTU(size=18, weight="normal"), justify="right")
         self.progresslabel.grid(row=5, column=0, pady=0, padx=25, sticky="e", columnspan=8)
         
         
@@ -218,9 +221,7 @@ class App(ctk.CTk, AsyncCTk):
         self.todo.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
         self.todo.grid_rowconfigure((0,1),weight=1)
         
-        
-        values = self.donetasks["pendingtasks"]
-        self.scrollable_checkbox_frame = ToDoFrame(self.todo, values=values)
+        self.scrollable_checkbox_frame = ToDoFrame(self.todo, db=self.db)
         
         self.scrollable_checkbox_frame.grid(row=0, column=0, padx=70, pady=(30, 0), sticky="ew", columnspan=8)
         self.scrollable_checkbox_frame.bind_all("<Button-4>", lambda e: self.scrollable_checkbox_frame._parent_canvas.yview("scroll", -1, "units"))
@@ -243,11 +244,15 @@ class App(ctk.CTk, AsyncCTk):
         
         self.stats_label = ctk.CTkLabel(self.stats, text=f"HERE's WHAT I ACHIEVED!", font=UBUNTU(size=30), fg_color="transparent", wraplength=780, justify="center")
         self.stats_label.grid(row=0, column=0, pady=(20,5), padx=60, sticky="new", columnspan=2)
-        dates = self.donetasks['dates']
+        dates = self.db.get_total_tasks()
         if dates == []:
             values = {}
         else:
-            values = {tuple(val): 10 for val in dates}
+            values = {}
+            for val in dates:
+                date_tuple = (val['day'], val['month'], val['year'])
+                if date_tuple not in values:
+                    values[date_tuple] = 10
             self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color=WHITE,
                                 fg_color=NAVY_BLUE_DARK, title_bar_border_width=2, title_bar_border_color="gray80",
                                 title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
@@ -339,15 +344,14 @@ class App(ctk.CTk, AsyncCTk):
         self.progressbar.step()
 
     def percent(self):
-        if self.donetasks["pendingtasks"] == {}:
+        if self.db.get_total_tasks_count() == 0:
             return 0
-        return (self.donetasks["count"]/self.donetasks["total"])
+        return (self.db.get_completed_tasks_count()/self.db.get_total_tasks_count())
         
         
     @async_handler
     async def mark_as_done(self):
-        await self.refresh_cache()
-        checkboxes = self.scrollable_checkbox_frame.get(self.donetasks)
+        checkboxes = self.scrollable_checkbox_frame.get()
         if checkboxes == []:
             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="Please select a task first.", sound=True, option_1="Cool")
         else:
@@ -356,16 +360,11 @@ class App(ctk.CTk, AsyncCTk):
             if inp:
                 if inp.lower() == 'done':
                     for check in checkboxes:
-                        self.donetasks["pendingtasks"][check.cget("text")] = 1
-                        self.donetasks["count"] += 1
                         check.configure(state=tkinter.DISABLED)
-                        dates = self.donetasks["dates"]
-                        today = [datetime.date.today().day,datetime.date.today().month,datetime.date.today().year]
-                        if not today in dates: 
-                            self.donetasks["dates"].append(today)
-                    await self.save_config(self.donetasks)
+                        today = datetime.date.today()
+                        self.db.update_todo_status(int(check.cget("text").split("|")[0]), True)
                     self.progressbar.set(self.percent())
-                    self.progresslabel.configure(text=f"↪ Your Progress ({self.donetasks['count']}/{self.donetasks['total']} completed)")
+                    self.update_progresslabel()
                     self.trumpetsound.play()
                 
                     
@@ -382,12 +381,9 @@ class App(ctk.CTk, AsyncCTk):
                     for i in checkboxes:
                         i.destroy()
                     self.scrollable_checkbox_frame.checkboxes = []
-                    self.donetasks["pendingtasks"] = {}
-                    self.donetasks["count"] = 0
-                    self.donetasks["total"] = 0
-                    await self.save_config(self.donetasks)
+                    self.db.delete_all_todos()
                     self.progressbar.set(0)
-                    self.progresslabel.configure(text=f"↪ Your Progress ({self.donetasks['count']}/{self.donetasks['total']} completed)")
+                    self.update_progresslabel()
                     CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="Successfully deleted all To-Dos!", sound=True, option_1="Less Gooo!!!")
         
     
@@ -396,18 +392,13 @@ class App(ctk.CTk, AsyncCTk):
         event = self.entry_todo.get()
         if event == "":
             return
-        elif event in self.donetasks["pendingtasks"]:
-            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="A task with the same title is already pending/completed.", sound=True, option_1="Oh Shit!")
-            return
-        self.donetasks["total"] += 1
-        self.donetasks["pendingtasks"][event] = 0
-        await self.save_config(self.donetasks)
+        today = datetime.date.today()
+        id = self.db.add_todo(event, "PROJECT", False, today.day, today.month, today.year)
         self.progressbar.set(self.percent())
-        self.progresslabel.configure(text=f"↪ Your Progress ({self.donetasks['count']}/{self.donetasks['total']} completed)")
-        
+        self.update_progresslabel()
         
         checkboxes = self.scrollable_checkbox_frame.checkboxes
-        checkbox = ctk.CTkCheckBox(self.scrollable_checkbox_frame, text=event, hover=True)
+        checkbox = ctk.CTkCheckBox(self.scrollable_checkbox_frame, text=f"{id} | {event} | PROJECT", hover=True)
         checkbox.grid(row=len(checkboxes), column=0, padx=50, pady=(10, 10), sticky="ew", columnspan=2)
         checkboxes.append(checkbox)
         
@@ -417,6 +408,9 @@ class App(ctk.CTk, AsyncCTk):
         self.levelsound.play()
     
     
+    
+    def update_progresslabel(self):
+        self.progresslabel.configure(text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)")
         
     def set_current_tab(self, current_tab):
         for tab in self.tabsbutton:
@@ -435,13 +429,17 @@ class App(ctk.CTk, AsyncCTk):
         
     @async_handler
     async def set_stats(self):
-        await self.refresh_cache()
-        dates = self.donetasks['dates']
+        dates = self.db.get_total_tasks()
         if dates == []:
             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="You haven't completed any tasks yet.\nStart completing now!", sound=True, option_1="Oh shit!")
         else:
-            values = {tuple(val): 10 for val in dates}
-            self.calendar.destroy()
+            values = {}
+            for val in dates:
+                date_tuple = (val['day'], val['month'], val['year'])
+                if date_tuple not in values:
+                    values[date_tuple] = 10
+            if hasattr(self, "calendar"):
+                self.calendar.destroy()
             self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color=WHITE,
                                 fg_color=NAVY_BLUE, title_bar_border_width=2, title_bar_border_color="gray80",
                                 title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
@@ -494,15 +492,6 @@ class App(ctk.CTk, AsyncCTk):
             self.send_area.select_range(0, 'end')
             self.send_area.icursor('end')
             return 'break'
-        
-    
-    async def refresh_cache(self):
-        async with aiofiles.open("./data/donetasks.json","r") as f:
-            self.donetasks = json.loads(await f.read())
-    
-    async def save_config(self, config):
-        async with aiofiles.open("./data/donetasks.json", "w") as f:
-            await f.write(json.dumps(config, indent=4))
             
             
     @async_handler
@@ -760,16 +749,17 @@ class App(ctk.CTk, AsyncCTk):
 
 
 class ToDoFrame(ctk.CTkScrollableFrame):
-    def __init__(self, master, values):
+    def __init__(self, master, db):
         super().__init__(master, label_text="⇲ MY TO-DO LIST", label_fg_color=DULL_BLUE, border_width=2, border_color=BLACK, corner_radius=18, fg_color="gray4", label_font=UBUNTU(size=15))
 
-        self.values = values
+        self.db = db
+        self.values = self.db.get_total_tasks()
         self.checkboxes = []
 
-        for i, value in enumerate(list(self.values.keys())):
-            state = tkinter.DISABLED if (self.values.get(value) == 1) else tkinter.NORMAL
-            checkbox = ctk.CTkCheckBox(self, text=value, hover=True, state=state, onvalue="on", offvalue="off", command=self.add_temp_check())
-            if self.values.get(value) == 1:
+        for i, val in enumerate(self.values):
+            state = tkinter.DISABLED if (val['status']==True) else tkinter.NORMAL
+            checkbox = ctk.CTkCheckBox(self, text=f"{val['id']} | {val['task_name']} | {val['project']}", hover=True, state=state, onvalue="on", offvalue="off", command=self.add_temp_check())
+            if val['status']:
                 checkbox.select()
             checkbox.grid(row=i, column=0, padx=50, pady=(10, 10), sticky="ew", columnspan=2)
             self.checkboxes.append(checkbox)
@@ -777,29 +767,15 @@ class ToDoFrame(ctk.CTkScrollableFrame):
     def add_temp_check(self):
         pass
         
-    def get(self, donetasks):
+    def get(self):
         if self.checkboxes == [] or not self.checkboxes:
-            print("no checkboxes fount", self.checkboxes)
+            print("no checkboxes found", self.checkboxes)
         checked_checkboxes = []
-        print(donetasks['pendingtasks'])
         for checkbox in self.checkboxes:
-            if (checkbox.get() == "on" or checkbox.get() == "1" or checkbox.get() == 1) and donetasks["pendingtasks"][checkbox.cget('text')] == 0:
+            checkid = int(checkbox.cget('text').split("|")[0])
+            if (checkbox.get() == "on" or checkbox.get() == "1" or checkbox.get() == 1) and self.db.search_todo_by_id(checkid)['status'] == False:
                 checked_checkboxes.append(checkbox)
         return checked_checkboxes
-    
-        
-        
-############################################### MESSAGE DIALOGUE ###############################################
-         
-         
-         
-class MessageDialogue(ctk.CTkToplevel):
-    def __init__(self, message):
-        super().__init__()
-        self.geometry("300x100")
-
-        self.label = ctk.CTkLabel(self, text=f"{message}")
-        self.label.pack(padx=20, pady=20)
 
 
 
