@@ -10,17 +10,19 @@ class Database:
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS tasks (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 task_name TEXT,
+                                list TEXT,
                                 project TEXT,
                                 status BOOLEAN,
+                                priority TEXT,
                                 day INTEGER,
                                 month INTEGER,
                                 year INTEGER
                             )''')
         self.conn.commit()
 
-    def add_todo(self, task_name, project, status, day, month, year):
-        self.cursor.execute('''INSERT INTO tasks (task_name, project, status, day, month, year)
-                               VALUES (?, ?, ?, ?, ?, ?)''', (task_name, project, status, day, month, year))
+    def add_todo(self, task_name, mylist, project, status, priority, day, month, year):
+        self.cursor.execute('''INSERT INTO tasks (task_name, list, project, status, priority, day, month, year)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (task_name, mylist, project, status, priority, day, month, year))
         self.conn.commit()
         return self.cursor.lastrowid
 
@@ -41,6 +43,10 @@ class Database:
 
     def search_todo_by_project(self, project):
         self.cursor.execute('''SELECT * FROM tasks WHERE project = ?''', (project,))
+        return [dict(row) for row in self.cursor.fetchall()]
+    
+    def search_todo_by_list(self, mylist, project):
+        self.cursor.execute('''SELECT * FROM tasks WHERE list = ? AND project = ?''', (mylist, project))
         return [dict(row) for row in self.cursor.fetchall()]
 
     def search_todo_by_id(self, task_id):

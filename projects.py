@@ -14,7 +14,7 @@ from async_tkinter_loop import async_handler
 from async_tkinter_loop.mixins import AsyncCTk
 from modules.database_handler import Database
 
-import pytube
+from PIL import Image
 import pyperclip
 import pygame
 import json
@@ -36,8 +36,7 @@ WEBSOCKET_SERVER=os.getenv('WEBSOCKET_SERVER')
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("./themes/dark-blue.json") 
-        
-
+    
 class App(ctk.CTk, AsyncCTk):
     def __init__(self):
         super().__init__()
@@ -90,7 +89,7 @@ class App(ctk.CTk, AsyncCTk):
         self.sidebar_frame.grid_rowconfigure((0,1,2,3,4,5), weight=1)
         
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="LakshApp", font=UBUNTU(size=28), text_color=LIGHT_BLUE, justify="center")
-        self.logo_label.grid(row=0, column=0, padx=40, pady=(100,60),columnspan=2, rowspan=1, sticky="ew")
+        self.logo_label.grid(row=0, column=0, padx=25, pady=(100,60),columnspan=2, rowspan=1, sticky="ew")
         
         
         
@@ -98,24 +97,21 @@ class App(ctk.CTk, AsyncCTk):
         
         
         
-        self.hometab = ctk.CTkButton(master=self.sidebar_frame, text=" Home ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_home, font=UBUNTU())
-        self.hometab.grid(padx=40, pady=8, row=1, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.todotab = ctk.CTkButton(master=self.sidebar_frame, text=" To-Do ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_todo, font=UBUNTU())
-        self.todotab.grid(padx=40, pady=8, row=2, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.statstab = ctk.CTkButton(master=self.sidebar_frame, text=" My Progress ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_stats, font=UBUNTU())
-        self.statstab.grid(padx=40, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.sessionstab = ctk.CTkButton(master=self.sidebar_frame, text=" Live Sessions ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_sessions, font=UBUNTU())
-        self.sessionstab.grid(padx=40, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.hometab = CursorButton(master=self.sidebar_frame, text=" Home ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_home, font=UBUNTU())
+        self.hometab.grid(padx=25, pady=8, row=1, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.todotab = CursorButton(master=self.sidebar_frame, text=" To-Do ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_todo, font=UBUNTU())
+        self.todotab.grid(padx=25, pady=8, row=2, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.statstab = CursorButton(master=self.sidebar_frame, text=" My Progress ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_stats, font=UBUNTU())
+        self.statstab.grid(padx=25, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.sessionstab = CursorButton(master=self.sidebar_frame, text=" Live Sessions ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_sessions, font=UBUNTU())
+        self.sessionstab.grid(padx=25, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
         
         
-        self.switch_frame = ctk.CTkFrame(self.sidebar_frame, corner_radius=20, fg_color="gray4")
-        self.switch_frame.grid(row=5, column=0, sticky="nsew", padx=40,pady=(8,100), columnspan=2)
-        self.switch_frame.grid_columnconfigure(0, weight=1)
-        self.switch_frame.grid_rowconfigure(0, weight=1)
-        
-        self.switch_var = ctk.StringVar(value="off")
-        self.switch = ctk.CTkSwitch(self.switch_frame, text="Ambient Mode", onvalue="on", offvalue="off", variable=self.switch_var, command=self.switch_event, switch_height=15, switch_width=40, font=UBUNTU(size=14))
-        self.switch.grid(row=0, column=0, pady=10, padx=10, sticky="ew", columnspan=1)
+        self.music_switch_img = ctk.CTkImage(dark_image=Image.open("./images/Switches/off-ui.png"), size=(35,20))
+        self.music_switch = ctk.CTkButton(self.sidebar_frame, text="Ambient Mode", anchor="w", image=self.music_switch_img, command=self.music_switch_event, fg_color="gray4", hover=False, corner_radius=20, font=UBUNTU(size=14))
+        self.music_switch.grid(row=5, column=0, sticky="nsew", padx=25,pady=(8,100), columnspan=2)
+        self.music_switch.bind("<Enter>", self.hover_cursor_on)
+        self.music_switch.bind("<Leave>", self.hover_cursor_off)
         
         
         
@@ -157,10 +153,10 @@ class App(ctk.CTk, AsyncCTk):
         self.home.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
         self.home.grid_rowconfigure((0,1),weight=1)
         
-        #self.github = ctk.CTkButton(master=self.sidebar_frame, command=self.test)
+        #self.github = CursorButton(master=self.sidebar_frame, command=self.test)
         #self.github.grid(padx=(10,5), pady=(10,140), row=4, column=0,columnspan=1, rowspan=1, sticky="ns")
         
-        #self.developer = ctk.CTkButton(master=self.sidebar_frame, command=self.test)
+        #self.developer = CursorButton(master=self.sidebar_frame, command=self.test)
         #self.developer.grid(padx=(5,10), pady=(10,140), row=4, column=1,columnspan=1, rowspan=1, sticky="ns")
         
         
@@ -185,7 +181,7 @@ class App(ctk.CTk, AsyncCTk):
         self.quotes_author_label = ctk.CTkLabel(self.quotes_frame, text=f"{self.quotes[self.quote_no]['author']}", font=HELVETICA(size=20, weight="normal"), fg_color="transparent")
         self.quotes_author_label.grid(row=1, column=0, pady=(0,0), padx=120, columnspan=8, sticky="nsew")
         
-        self.change_quote_btn = ctk.CTkButton(self.quotes_frame, text="Refresh Quotes", command=self.change_quote_event, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
+        self.change_quote_btn = CursorButton(self.quotes_frame, text="Refresh Quotes", command=self.change_quote_event, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
         self.change_quote_btn.grid(row=2, column=0, pady=(40,40), padx=120, columnspan=2)
         
         
@@ -194,22 +190,40 @@ class App(ctk.CTk, AsyncCTk):
         
         
         
-        values = []
-        for val in self.db.get_total_tasks():
-            if val['project'] not in values:
-                values.append(val['project'])
-        if values == []:
-            values.append("Default Project")
-
+        projectlistvalues = {"project": []}
+        dbget = self.db.get_total_tasks()
+        for val in dbget:
+            if val['project'] not in projectlistvalues["project"]:
+                projectlistvalues["project"].append(val['project'])
+        if projectlistvalues["project"] == []:
+            projectlistvalues["project"].append("Default Project")
+            
+        defaultproject = projectlistvalues["project"][0]
+        
         self.home_projectselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=UBUNTU(), dropdown_font=UBUNTU(), dynamic_resizing=False, anchor="w")
-        self.home_projectselector.grid(row=3, column=0, pady=(20,0), padx=35, sticky="ew", columnspan=3)
-        self.home_projectselector.set("Default Project")
-        self.home_projectselector_dropdown = CTkScrollableDropdown(self.home_projectselector, values=values, alpha=0.9, justify="left")
+        self.home_projectselector.grid(row=3, column=0, pady=(20,0), padx=(30,0), sticky="ew", columnspan=2)
+        self.home_projectselector.set(defaultproject)
+        self.home_projectselector_dropdown = CTkScrollableDropdown(self.home_projectselector, values=projectlistvalues["project"], alpha=0.9, justify="left", command=self.projectselector_event)
+        
+        self.home_listselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=UBUNTU(), dropdown_font=UBUNTU(), dynamic_resizing=False, anchor="w")
+        self.home_listselector.grid(row=3, column=2, pady=(20,0), padx=(10,0), sticky="ew", columnspan=2)
+        curr = self.db.search_todo_by_project(defaultproject)
+        
+        values = []
+        for x in curr:
+            if not x['list'] in values:
+                values.append(x['list'])
+                
+        self.home_listselector.set(curr[0]['list'])
+        self.home_listselector_dropdown = CTkScrollableDropdown(self.home_listselector, values=values, alpha=0.9, justify="left")
         
         self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
         self.entry_todo.grid(row=4, column=0, pady=(20,5), padx=(20,0),  sticky="ew", columnspan=7)
-        self.add_todo = ctk.CTkButton(self.home, text="+", command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="black", width=5, border_width=2, border_color="gray20", hover_color="gray20")
-        self.add_todo.grid(row=4, column=0, pady=(20,0), padx=(10,20), columnspan=8, sticky="e")
+        self.plusimg = ctk.CTkImage(dark_image=Image.open("./images/Tags/plus-ui.png"), size=(50,50))
+        self.add_todo_button = ctk.CTkButton(self.home, text="", image=self.plusimg, command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="transparent", width=3, hover=False)
+        self.add_todo_button.grid(row=4, column=0, pady=(20,0), padx=(10,20), columnspan=8, sticky="e")
+        self.add_todo_button.bind("<Enter>", self.hover_cursor_on)
+        self.add_todo_button.bind("<Leave>", self.hover_cursor_off)
         
         
         
@@ -232,23 +246,49 @@ class App(ctk.CTk, AsyncCTk):
         
 
 
-        self.todo.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
-        self.todo.grid_rowconfigure((0,1),weight=1)
-        
-        self.scrollable_checkbox_frame = ToDoFrame(self.todo, db=self.db)
-        
-        self.scrollable_checkbox_frame.grid(row=0, column=0, padx=70, pady=(30, 0), sticky="ew", columnspan=8)
-        self.scrollable_checkbox_frame.bind_all("<Button-4>", lambda e: self.scrollable_checkbox_frame._parent_canvas.yview("scroll", -1, "units"))
-        self.scrollable_checkbox_frame.bind_all("<Button-5>", lambda e: self.scrollable_checkbox_frame._parent_canvas.yview("scroll", 1, "units"))
+        self.todo.grid_columnconfigure((0),weight=1)
+        self.todo.grid_rowconfigure((0),weight=1)
 
-        self.button = ctk.CTkButton(self.todo, text="🗹 | Mark as Completed", command=self.mark_as_done)
-        self.button.grid(row=1, column=0, padx=70, pady=(20,0), sticky="ew", columnspan=8)        
+        self.todoxyframe = ctk.CTkScrollableFrame(self.todo, fg_color="transparent")
+        self.todoxyframe.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
+        self.todoxyframe.grid_rowconfigure((0,1),weight=1)
+        self.todoxyframe.grid(column=0, row=0, sticky="nsew")
+        self.scrollable_checkbox_frame = None
+        self.project_rows = 0
+        self.project_columns = 0
         
-        self.button = ctk.CTkButton(self.todo, text="𐄂 | Delete all Tasks", command=self.delete_tasks, fg_color=THEME_RED, hover_color=RED)
-        self.button.grid(row=2, column=0, padx=70, pady=(10,50), sticky="ew", columnspan=8) 
-        
-        
-        self.add_button = ctk.CTkButton(self.todo, text="+", fg_color="gray4", width=60, font=UBUNTU(size=30), height=60, border_width=2, border_color="gray20", hover_color="gray20")
+        projects = self.db.get_total_tasks()
+        totals = []
+        for project in projects:
+            if project['project'] not in totals:
+                totals.append(project['project'])
+        self.project_frame_list = []
+                
+        for i, project in enumerate(totals):
+            project_main_frame = ctk.CTkFrame(self.todoxyframe, fg_color="transparent")
+            project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
+            project_frame = ProjectFrame(project_main_frame, db=self.db, projectname=project)
+            project_edit_button = CursorButton(project_main_frame, text="✎ Edit", font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE)
+            project_delete_button = CursorButton(project_main_frame, text="⌦ Delete", font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
+            
+            if self.project_columns == 8:
+                self.project_rows += 1
+                self.project_columns = 0
+
+            if (i == len(totals) - 1) and (len(totals) % 2 != 0):
+                project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
+                project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
+                project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
+                project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
+            else:
+                project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
+                project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
+                project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
+                project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
+            self.project_frame_list.append(project_frame)
+            self.project_columns += 4
+            
+        self.add_button = CursorButton(self.todo, text="+", fg_color="gray4", width=60, font=UBUNTU(size=30), height=60, border_width=2, border_color="gray20", hover_color="gray20")
         self.add_button.place(relx=1, rely=1, anchor="se")
         
 
@@ -287,11 +327,11 @@ class App(ctk.CTk, AsyncCTk):
         self.sessions.grid_rowconfigure((0,1,2,3,4,5,6),weight=1)
 
 
-        self.sessions_progressbutton = ctk.CTkButton(self.sessions, text="Start Session", command=self.start_sessions_timer, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
+        self.sessions_progressbutton = CursorButton(self.sessions, text="Start Session", command=self.start_sessions_timer, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
         self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=(10, 0), sticky="ew", columnspan=6, rowspan=1)
         
         
-        self.sessions_leavebutton = ctk.CTkButton(self.sessions, text="⍇ Leave Room", command=self.leavesession, font=UBUNTU(size=15), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
+        self.sessions_leavebutton = CursorButton(self.sessions, text="⍇ Leave Room", command=self.leavesession, font=UBUNTU(size=15), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
         self.sessions_leavebutton.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="e", columnspan=8, rowspan=1)
             
         
@@ -303,7 +343,7 @@ class App(ctk.CTk, AsyncCTk):
         
         if self.role == 'member':
             self.sessions_progressbutton.destroy()
-            self.sessions_progressbutton = ctk.CTkButton(self.sessions, state="disabled", text="The host can start a session", font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
+            self.sessions_progressbutton = CursorButton(self.sessions, state="disabled", text="The host can start a session", font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
             self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=(10, 0), sticky="ew", columnspan=6, rowspan=1)
         
         
@@ -316,7 +356,7 @@ class App(ctk.CTk, AsyncCTk):
         
         self.send_area = ctk.CTkEntry(self.sessions, placeholder_text="Say Hello to your session partner!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
         self.send_area.grid(row=6, column=0, pady=(0,8), padx=(15,15),  sticky="sew", columnspan=7, rowspan=1)
-        self.send_button = ctk.CTkButton(self.sessions, text="➤", command=self.add_own_message, font=UBUNTU(size=30, weight="normal"), corner_radius=100, fg_color="transparent", width=2, height=60, hover_color="gray4")
+        self.send_button = CursorButton(self.sessions, text="➤", command=self.add_own_message, font=UBUNTU(size=30, weight="normal"), corner_radius=100, fg_color="transparent", width=2, height=60, hover_color="gray4")
         self.send_button.grid(row=6, column=0, pady=(0,8), padx=(15,15), columnspan=8, sticky="se", rowspan=1)
         
         
@@ -326,14 +366,40 @@ class App(ctk.CTk, AsyncCTk):
 
         self.socket = None
     
+    def hover_cursor_on(self, event):
+        self.configure(cursor="hand2")
+
+    def hover_cursor_off(self, event):
+        self.configure(cursor="")
     
-    def switch_event(self):
-        sw = self.switch_var.get()
-        if sw == "on":
+    def projectselector_event(self, choice):
+        db = self.db.search_todo_by_project(choice)
+        values = []
+        for x in db:
+            if not x['list'] in values:
+                values.append(x['list'])
+        self.home_listselector_dropdown.configure(values=values)
+        self.home_listselector.set(db[0]['list'])
+        self.home_projectselector.set(choice)
+        
+    def music_switch_event(self):
+        if not hasattr(self, "music_switch_var"):
+            self.music_switch_var = True
+            self.music_switch_img.configure(dark_image=Image.open("./images/Switches/on-ui.png"))
             self.play()
-        if sw == "off":
+            return
+        if self.music_switch_var:
+            self.music_switch_var = False
+            self.music_switch_img.configure(dark_image=Image.open("./images/Switches/off-ui.png"))
             self.paused = True
             self.music.music.pause()
+            return
+        if not self.music_switch_var:
+            self.music_switch_var = True
+            self.music_switch_img.configure(dark_image=Image.open("./images/Switches/on-ui.png"))
+            self.play()
+            return
+            
     
     def play_youtube(self):
         dialog = ctk.CTkInputDialog(text="Search the perfect ambience on YouTube.", title="LakshApp")
@@ -347,7 +413,8 @@ class App(ctk.CTk, AsyncCTk):
                 self.music.music.play(-1, fade_ms=2000)
             else:
                 CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Select a valid format to play music (mp3/ogg/wav).", sound=True, option_1="Okay")
-                self.switch.deselect()
+                self.music_switch_img.configure(dark_image=Image.open("./images/Switches/off-ui.png"))
+                del self.music_switch_var
         else:
             self.music.music.unpause()
 
@@ -382,7 +449,6 @@ class App(ctk.CTk, AsyncCTk):
                 if inp.lower() == 'done':
                     for check in checkboxes:
                         check.configure(state=tkinter.DISABLED)
-                        today = datetime.date.today()
                         self.db.update_todo_status(int(check.cget("text").split("|")[0]), True)
                     self.progressbar.set(self.percent())
                     self.update_progresslabel()
@@ -414,15 +480,13 @@ class App(ctk.CTk, AsyncCTk):
         if event == "":
             return
         today = datetime.date.today()
-        id = self.db.add_todo(event, "PROJECT", False, today.day, today.month, today.year)
+        project = self.home_projectselector.get()
+        mylist = self.home_listselector.get()
+        db_return = self.db.add_todo(event, mylist, project, False, "HIGH", today.day, today.month, today.year)
         self.progressbar.set(self.percent())
         self.update_progresslabel()
         
-        checkboxes = self.scrollable_checkbox_frame.checkboxes
-        checkbox = ctk.CTkCheckBox(self.scrollable_checkbox_frame, text=f"{id} | {event} | PROJECT", hover=True)
-        checkbox.grid(row=len(checkboxes), column=0, padx=50, pady=(10, 10), sticky="ew", columnspan=2)
-        checkboxes.append(checkbox)
-        
+        self.search_projectframe(project).search_listframe(mylist).create_todo(self.db.search_todo_by_id(db_return))
     
         CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List.\nGo to To-Do Tab to view more!", sound=True, option_1="There we go!")
         self.entry_todo.delete(0, "end")
@@ -739,7 +803,10 @@ class App(ctk.CTk, AsyncCTk):
             cur += 1
             await asyncio.sleep(1)
             
-        
+    def search_projectframe(self, project):
+        for x in self.project_frame_list:
+            if x.projectname == project:
+                return x
         
     def convert_time(self, time):
         time = time.lower()
@@ -769,24 +836,98 @@ class App(ctk.CTk, AsyncCTk):
 
 
 
-class ToDoFrame(ctk.CTkScrollableFrame):
-    def __init__(self, master, db):
-        super().__init__(master, label_text="⇲ MY TO-DO LIST", label_fg_color=DULL_BLUE, border_width=2, border_color=BLACK, corner_radius=18, fg_color="gray4", label_font=UBUNTU(size=15))
-
+class ProjectFrame(ctk.CTkScrollableFrame):
+    def __init__(self, base_frame, db, projectname):
+        super().__init__(base_frame, label_text=projectname, label_fg_color="gray8", border_width=3, border_color=BLACK, corner_radius=18, fg_color="gray13", label_font=UBUNTU(size=15))
+        
         self.db = db
-        self.values = self.db.get_total_tasks()
-        self.checkboxes = []
+        self.projectname = projectname
+        
+        self.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
+        
+        self.columns = 0
+        self.rows = 0
+        
+        self.mylist_list = []
+        self.listframes = []
+        
+        self.load_projects()
+        
+        self.click = False
+        
+    def load_projects(self):
+        projects = self.db.search_todo_by_project(self.projectname)
+        totals = []
+        for mylist in projects:
+            if mylist['list'] not in totals:
+                totals.append(mylist['list'])
 
-        for i, val in enumerate(self.values):
-            state = tkinter.DISABLED if (val['status']==True) else tkinter.NORMAL
-            checkbox = ctk.CTkCheckBox(self, text=f"{val['id']} | {val['task_name']} | {val['project']}", hover=True, state=state, onvalue="on", offvalue="off", command=self.add_temp_check())
+        for i, mylist in enumerate(totals):
+            todo_frame = ToDoFrame(self, self.db, mylist, self.projectname)
+            if self.columns == 8:
+                self.rows += 1
+                self.columns = 0
+            if (i == len(totals) - 1) and (len(totals) % 2 != 0):
+                todo_frame.grid(row=self.rows, column=0, padx=10, pady=10, sticky="ew", columnspan=8)
+            else:
+                todo_frame.grid(row=self.rows, column=self.columns, padx=10, pady=10, sticky="ew", columnspan=4)
+            self.columns += 4
+            self.mylist_list.append(todo_frame)
+    
+    def search_listframe(self, mylist):
+        for x in self.mylist_list:
+            if x.listname == mylist:
+                return x
+    
+
+
+############################################### TO-DO FRAME ###############################################
+
+
+
+class ToDoFrame(ctk.CTkScrollableFrame):
+    def __init__(self, master, db, listname="MY TO-DO LIST", projectname="Default Project"):
+        super().__init__(master, label_text=f"⇲ {listname}", label_fg_color=DULL_BLUE, border_width=1, border_color=WHITE, corner_radius=8, fg_color=NAVY_BLUE, label_font=UBUNTU(size=15))
+        
+        self.master = master
+        self.db = db
+        self.checkboxes = []
+        self.listname = listname
+        self.projectname = projectname
+        
+        self.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
+        
+        self.load_lists()
+
+        self.click = False
+        
+    def load_lists(self):
+        values = self.db.search_todo_by_list(self.listname, self.projectname)
+        for i, val in enumerate(values):
+            checkbox = ctk.CTkCheckBox(self, text=f"{val['task_name']}", hover=True, onvalue="on", offvalue="off", font=UBUNTU(12, "normal"), command=self.mark_as_done_checkbox)
+
             if val['status']:
+                checkbox.cget("font").configure(overstrike=True, slant="italic")
                 checkbox.select()
-            checkbox.grid(row=i, column=0, padx=50, pady=(10, 10), sticky="ew", columnspan=2)
+            
+            checkbox.task_id = val['id']
+            checkbox.grid(row=i, column=0, padx=5, pady=5, sticky="ew", columnspan=8)
             self.checkboxes.append(checkbox)
         
-    def add_temp_check(self):
-        pass
+    def create_todo(self, val):
+        checkbox = ctk.CTkCheckBox(self, text=f"{val['task_name']}", hover=True, onvalue="on", offvalue="off", font=UBUNTU(12, "normal"), command=self.mark_as_done_checkbox)
+        checkbox.task_id = val['id']
+        checkbox.grid(row=len(self.checkboxes)+1, column=0, padx=5, pady=5, sticky="ew", columnspan=8)
+        self.checkboxes.append(checkbox)
+    
+    def mark_as_done_checkbox(self):
+        for checkbox in self.winfo_children():
+            if checkbox.get() == "on" and checkbox.cget("font").cget("overstrike") == False:
+                checkbox.cget("font").configure(overstrike=True, slant="italic")
+                self.db.update_todo_status(checkbox.task_id, True)
+            elif checkbox.get() == "off" and checkbox.cget("font").cget("overstrike") == True:
+                checkbox.cget("font").configure(overstrike=False, slant="roman")
+                self.db.update_todo_status(checkbox.task_id, False)
         
     def get(self):
         if self.checkboxes == [] or not self.checkboxes:
@@ -798,6 +939,24 @@ class ToDoFrame(ctk.CTkScrollableFrame):
                 checked_checkboxes.append(checkbox)
         return checked_checkboxes
 
+
+
+############################################### CTkButton Frame ###############################################
+
+
+
+class CursorButton(ctk.CTkButton):
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.bind("<Enter>", self.hover_cursor_on)
+        self.bind("<Leave>", self.hover_cursor_off)
+
+    def hover_cursor_on(self, event):
+        self.configure(cursor="hand2")
+
+    def hover_cursor_off(self, event):
+        self.configure(cursor="")
+        
 
 
 ############################################### KEYBINDS ###############################################
