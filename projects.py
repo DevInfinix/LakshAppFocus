@@ -248,6 +248,9 @@ class App(ctk.CTk, AsyncCTk):
 
         self.todo.grid_columnconfigure((0),weight=1)
         self.todo.grid_rowconfigure((0),weight=1)
+        
+        self.edit_sidepanel = Sidepanel(self, self.db, 1.04, 0.7, "edit")
+        self.create_sidepanel = Sidepanel(self, self.db, 1.04, 0.7, "create")
 
         self.todoxyframe = ctk.CTkScrollableFrame(self.todo, fg_color="transparent")
         self.todoxyframe.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
@@ -256,6 +259,7 @@ class App(ctk.CTk, AsyncCTk):
         self.scrollable_checkbox_frame = None
         self.project_rows = 0
         self.project_columns = 0
+        self.project_sidepanels = {}
         
         projects = self.db.get_total_tasks()
         totals = []
@@ -268,7 +272,7 @@ class App(ctk.CTk, AsyncCTk):
             project_main_frame = ctk.CTkFrame(self.todoxyframe, fg_color="transparent")
             project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
             project_frame = ProjectFrame(project_main_frame, db=self.db, projectname=project)
-            project_edit_button = CursorButton(project_main_frame, text="✎ Edit", font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE)
+            project_edit_button = CursorButton(project_main_frame, text="✎ Edit", font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.toggle_edit_sidepanel(p))
             project_delete_button = CursorButton(project_main_frame, text="⌦ Delete", font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
             
             if self.project_columns == 8:
@@ -288,8 +292,10 @@ class App(ctk.CTk, AsyncCTk):
             self.project_frame_list.append(project_frame)
             self.project_columns += 4
             
-        self.add_button = CursorButton(self.todo, text="+", fg_color="gray4", width=60, font=UBUNTU(size=30), height=60, border_width=2, border_color="gray20", hover_color="gray20")
-        self.add_button.place(relx=1, rely=1, anchor="se")
+            self.project_sidepanels[project] = Sidepanel(self, self.db, 1.04, 0.7, f"edit")
+            
+        self.create_floating_button = CursorButton(self.todo, text="+", fg_color="gray4", width=60, font=UBUNTU(size=30), height=60, border_width=2, border_color="gray20", hover_color="gray20", corner_radius=15, command=self.toggle_create_sidepanel)
+        self.create_floating_button.place(relx=1, rely=1, anchor="se")
         
 
 ############################################### STATS TAB ###############################################
@@ -372,6 +378,20 @@ class App(ctk.CTk, AsyncCTk):
     def hover_cursor_off(self, event):
         self.configure(cursor="")
     
+    def toggle_edit_sidepanel(self, project):
+        # if not self.create_sidepanel.is_closed:
+        #     self.create_sidepanel.animate()
+        # self.edit_sidepanel.animate()
+        
+        if project in self.project_sidepanels:
+            sidepanel = self.project_sidepanels[project]
+            sidepanel.animate()
+        
+    def toggle_create_sidepanel(self):
+        if not self.edit_sidepanel.is_closed:
+            self.edit_sidepanel.animate()
+        self.create_sidepanel.animate()
+        
     def projectselector_event(self, choice):
         db = self.db.search_todo_by_project(choice)
         values = []
@@ -941,6 +961,60 @@ class ToDoFrame(ctk.CTkScrollableFrame):
 
 
 
+############################################### SIDEPANEL ###############################################
+
+
+
+class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
+    def __init__(self, master, db, start_pos, end_pos, type="create"):
+        super().__init__(master, label_text=None, label_fg_color=DULL_BLUE, border_width=2, border_color=WHITE, corner_radius=8, fg_color="black", label_font=UBUNTU(size=18))
+        
+        self.master = master
+        self.db = db
+        self.checkboxes = []
+        
+        if type == "create":
+            self.configure(label_text = "CREATE A NEW WORKSPACE")
+        else:
+            CursorButton(self, command=self.animate, fg_color=THEME_BLUE, text_color="white", text="✓", border_width=2, hover_color=THEME_LIGHT_BLUE, border_color=THEME_LIGHT_BLUE, corner_radius=20).grid(column=0, row=0, columnspan=2, sticky="new", padx=15)
+            self.configure(label_text = "EDIT A WORKSPACE")
+        
+        self.grid_columnconfigure((0,1,2,3),weight=1)
+        
+        self.start_pos = start_pos + 0.04
+        self.end_pos = end_pos - 0.03
+        self.width = abs(start_pos - end_pos)
+        self.pos = self.start_pos
+        self.is_closed = True
+        self.place(relx = self.start_pos, rely = 0.05, relwidth = self.width, relheight = 0.95)
+
+        CursorButton(self, command=self.animate, fg_color=THEME_RED, text_color="white", text="✗", border_width=2, hover_color=RED, border_color=RED, corner_radius=30).grid(column=2, row=0, columnspan=2, sticky="new", padx=15)
+        
+
+    def animate(self):
+        if self.is_closed:
+            self.animate_forward()
+        else:
+            self.animate_backwards()
+
+    def animate_forward(self):
+        if self.pos > self.end_pos:
+            self.pos -= 0.03
+            self.place(relx = self.pos, rely = 0.05, relwidth = self.width, relheight = 0.9)
+            self.after(5, self.animate_forward)
+        else:
+            self.is_closed = False
+
+    def animate_backwards(self):
+        if self.pos < self.start_pos:
+            self.pos += 0.03
+            self.place(relx = self.pos, rely = 0.05, relwidth = self.width, relheight = 0.9)
+            self.after(5, self.animate_backwards)
+        else:
+            self.is_closed = True
+        
+        
+        
 ############################################### CTkButton Frame ###############################################
 
 
@@ -959,6 +1033,18 @@ class CursorButton(ctk.CTkButton):
         
 
 
+############################################### ImageButton ###############################################
+
+
+
+class ImageButton(ctk.CTkButton):
+    def __init__(self, master, image_path, command, image_height=50, image_width=50, **kwargs):
+        super().__init__(master, **kwargs)
+        self.image = ctk.CTkImage(dark_image=Image.open(image_path), size=(image_width, image_height))
+        self.button = ctk.CTkButton(self.master, text="", image=self.image, command=command, font=UBUNTU(size=40, weight="normal"), corner_radius=20, fg_color="transparent", width=3, hover=False)
+
+    
+    
 ############################################### KEYBINDS ###############################################
 
 
