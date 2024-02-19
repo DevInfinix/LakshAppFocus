@@ -248,9 +248,6 @@ class App(ctk.CTk, AsyncCTk):
 
         self.todo.grid_columnconfigure((0),weight=1)
         self.todo.grid_rowconfigure((0),weight=1)
-        
-        self.edit_sidepanel = Sidepanel(self, self.db, 1.04, 0.7, "edit")
-        self.create_sidepanel = Sidepanel(self, self.db, 1.04, 0.7, "create")
 
         self.todoxyframe = ctk.CTkScrollableFrame(self.todo, fg_color="transparent")
         self.todoxyframe.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
@@ -271,7 +268,7 @@ class App(ctk.CTk, AsyncCTk):
         for i, project in enumerate(totals):
             project_main_frame = ctk.CTkFrame(self.todoxyframe, fg_color="transparent")
             project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
-            project_frame = ProjectFrame(project_main_frame, db=self.db, projectname=project)
+            project_frame = ProjectFrame(self, project_main_frame, db=self.db, projectname=project)
             project_edit_button = CursorButton(project_main_frame, text="✎ Edit", font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.toggle_edit_sidepanel(p))
             project_delete_button = CursorButton(project_main_frame, text="⌦ Delete", font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
             
@@ -292,10 +289,12 @@ class App(ctk.CTk, AsyncCTk):
             self.project_frame_list.append(project_frame)
             self.project_columns += 4
             
-            self.project_sidepanels[project] = Sidepanel(self, self.db, 1.04, 0.7, f"edit")
+            self.project_sidepanels[project] = EditSidepanel(self, self.db, 1.04, 0.7, project)
             
+        self.create_sidepanel = CreateSidepanel(self, self.db, 1.04, 0.7)
         self.create_floating_button = CursorButton(self.todo, text="+", fg_color="gray4", width=60, font=UBUNTU(size=30), height=60, border_width=2, border_color="gray20", hover_color="gray20", corner_radius=15, command=self.toggle_create_sidepanel)
         self.create_floating_button.place(relx=1, rely=1, anchor="se")
+        self.current_sidepanel = None
         
 
 ############################################### STATS TAB ###############################################
@@ -386,10 +385,9 @@ class App(ctk.CTk, AsyncCTk):
         if project in self.project_sidepanels:
             sidepanel = self.project_sidepanels[project]
             sidepanel.animate()
+            
         
     def toggle_create_sidepanel(self):
-        if not self.edit_sidepanel.is_closed:
-            self.edit_sidepanel.animate()
         self.create_sidepanel.animate()
         
     def projectselector_event(self, choice):
@@ -518,6 +516,10 @@ class App(ctk.CTk, AsyncCTk):
         self.progresslabel.configure(text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)")
         
     def set_current_tab(self, current_tab):
+        if hasattr(self, "current_sidepanel"):
+            if self.current_sidepanel:
+                if (not self.current_sidepanel.is_closed):
+                    self.current_sidepanel.animate_backwards()
         for tab in self.tabsbutton:
             if current_tab == tab:
                 tab.configure(fg_color=THEME_BLUE)
@@ -857,9 +859,10 @@ class App(ctk.CTk, AsyncCTk):
 
 
 class ProjectFrame(ctk.CTkScrollableFrame):
-    def __init__(self, base_frame, db, projectname):
+    def __init__(self, root, base_frame, db, projectname):
         super().__init__(base_frame, label_text=projectname, label_fg_color="gray8", border_width=3, border_color=BLACK, corner_radius=18, fg_color="gray13", label_font=UBUNTU(size=15))
         
+        self.root = root
         self.db = db
         self.projectname = projectname
         
@@ -883,13 +886,14 @@ class ProjectFrame(ctk.CTkScrollableFrame):
                 totals.append(mylist['list'])
 
         for i, mylist in enumerate(totals):
-            todo_frame = ToDoFrame(self, self.db, mylist, self.projectname)
             if self.columns == 8:
                 self.rows += 1
                 self.columns = 0
             if (i == len(totals) - 1) and (len(totals) % 2 != 0):
+                todo_frame = ToDoFrame(self.root, self, self.db, mylist, self.projectname, 8)
                 todo_frame.grid(row=self.rows, column=0, padx=10, pady=10, sticky="ew", columnspan=8)
             else:
+                todo_frame = ToDoFrame(self.root, self, self.db, mylist, self.projectname, 4)
                 todo_frame.grid(row=self.rows, column=self.columns, padx=10, pady=10, sticky="ew", columnspan=4)
             self.columns += 4
             self.mylist_list.append(todo_frame)
@@ -906,14 +910,16 @@ class ProjectFrame(ctk.CTkScrollableFrame):
 
 
 class ToDoFrame(ctk.CTkScrollableFrame):
-    def __init__(self, master, db, listname="MY TO-DO LIST", projectname="Default Project"):
+    def __init__(self, root, master, db, listname="MY TO-DO LIST", projectname="Default Project", columnspan=4):
         super().__init__(master, label_text=f"⇲ {listname}", label_fg_color=DULL_BLUE, border_width=1, border_color=WHITE, corner_radius=8, fg_color=NAVY_BLUE, label_font=UBUNTU(size=15))
         
+        self.root = root
         self.master = master
         self.db = db
         self.checkboxes = []
         self.listname = listname
         self.projectname = projectname
+        self.columnspan = columnspan
         
         self.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
         
@@ -924,7 +930,7 @@ class ToDoFrame(ctk.CTkScrollableFrame):
     def load_lists(self):
         values = self.db.search_todo_by_list(self.listname, self.projectname)
         for i, val in enumerate(values):
-            checkbox = ctk.CTkCheckBox(self, text=f"{val['task_name']}", hover=True, onvalue="on", offvalue="off", font=UBUNTU(12, "normal"), command=self.mark_as_done_checkbox)
+            checkbox = ctk.CTkCheckBox(self, text=f"{self.wrap(val['task_name'])}", hover=True, onvalue="on", offvalue="off", font=UBUNTU(12, "normal"), command=self.mark_as_done_checkbox)
 
             if val['status']:
                 checkbox.cget("font").configure(overstrike=True, slant="italic")
@@ -935,7 +941,7 @@ class ToDoFrame(ctk.CTkScrollableFrame):
             self.checkboxes.append(checkbox)
         
     def create_todo(self, val):
-        checkbox = ctk.CTkCheckBox(self, text=f"{val['task_name']}", hover=True, onvalue="on", offvalue="off", font=UBUNTU(12, "normal"), command=self.mark_as_done_checkbox)
+        checkbox = ctk.CTkCheckBox(self, text=f"{self.wrap(val['task_name'])}", hover=True, onvalue="on", offvalue="off", font=UBUNTU(12, "normal"), command=self.mark_as_done_checkbox)
         checkbox.task_id = val['id']
         checkbox.grid(row=len(self.checkboxes)+1, column=0, padx=5, pady=5, sticky="ew", columnspan=8)
         self.checkboxes.append(checkbox)
@@ -948,6 +954,23 @@ class ToDoFrame(ctk.CTkScrollableFrame):
             elif checkbox.get() == "off" and checkbox.cget("font").cget("overstrike") == True:
                 checkbox.cget("font").configure(overstrike=False, slant="roman")
                 self.db.update_todo_status(checkbox.task_id, False)
+    
+    def wrap(self, text):
+        text = text.split()
+        self.update()
+        if self.columnspan == 4:
+            max_line_length = (self.winfo_reqwidth()/4)-50
+        else:
+            max_line_length = (self.winfo_reqwidth()/2)-50
+        print(max_line_length)
+        line_length = 0
+        for i in range(len(text)):
+            line_length += len(text[i])
+            if line_length > max_line_length:
+                text[i - 1] += "\n"
+                line_length = 0
+
+        return " ".join(text)
         
     def get(self):
         if self.checkboxes == [] or not self.checkboxes:
@@ -966,18 +989,12 @@ class ToDoFrame(ctk.CTkScrollableFrame):
 
 
 class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
-    def __init__(self, master, db, start_pos, end_pos, type="create"):
-        super().__init__(master, label_text=None, label_fg_color=DULL_BLUE, border_width=2, border_color=WHITE, corner_radius=8, fg_color="black", label_font=UBUNTU(size=18))
+    def __init__(self, master, db, start_pos, end_pos, label):
+        super().__init__(master, label_text=label, label_fg_color=DULL_BLUE, border_width=2, border_color=WHITE, corner_radius=8, fg_color="black", label_font=UBUNTU(size=18))
         
         self.master = master
         self.db = db
         self.checkboxes = []
-        
-        if type == "create":
-            self.configure(label_text = "CREATE A NEW WORKSPACE")
-        else:
-            CursorButton(self, command=self.animate, fg_color=THEME_BLUE, text_color="white", text="✓", border_width=2, hover_color=THEME_LIGHT_BLUE, border_color=THEME_LIGHT_BLUE, corner_radius=20).grid(column=0, row=0, columnspan=2, sticky="new", padx=15)
-            self.configure(label_text = "EDIT A WORKSPACE")
         
         self.grid_columnconfigure((0,1,2,3),weight=1)
         
@@ -988,6 +1005,7 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
         self.is_closed = True
         self.place(relx = self.start_pos, rely = 0.05, relwidth = self.width, relheight = 0.95)
 
+        CursorButton(self, command=self.animate, fg_color=THEME_BLUE, text_color="white", text="✓", border_width=2, hover_color=THEME_LIGHT_BLUE, border_color=THEME_LIGHT_BLUE, corner_radius=20).grid(column=0, row=0, columnspan=2, sticky="new", padx=15)
         CursorButton(self, command=self.animate, fg_color=THEME_RED, text_color="white", text="✗", border_width=2, hover_color=RED, border_color=RED, corner_radius=30).grid(column=2, row=0, columnspan=2, sticky="new", padx=15)
         
 
@@ -996,14 +1014,20 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
             self.animate_forward()
         else:
             self.animate_backwards()
+            
 
     def animate_forward(self):
+        if self.master.current_sidepanel:
+            if (not self.master.current_sidepanel.is_closed):
+                self.master.current_sidepanel.animate_backwards()
+                return
         if self.pos > self.end_pos:
             self.pos -= 0.03
             self.place(relx = self.pos, rely = 0.05, relwidth = self.width, relheight = 0.9)
             self.after(5, self.animate_forward)
         else:
             self.is_closed = False
+            self.master.current_sidepanel = self
 
     def animate_backwards(self):
         if self.pos < self.start_pos:
@@ -1012,9 +1036,62 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
             self.after(5, self.animate_backwards)
         else:
             self.is_closed = True
+            self.master.current_sidepanel = None
+        
+        
+class CreateSidepanel(Sidepanel):
+    def __init__(self, master, db, start_pos, end_pos):
+        super().__init__(master, db, start_pos, end_pos, "CREATE A NEW WORKSPACE")
+
+        self.master = master
+        self.db = db
+        self.project_name_entry = None
+        self.list_name_entry = None
+        self.task_name_entry = None
+
+        self.create_project_section()
+        self.create_list_section()
+        self.create_task_section()
+        self.create_buttons()
+
+    def create_project_section(self):
+        # Project name entry and error label
+        self.project_name_entry = ctk.CTkEntry(self, corner_radius=30,
+                                            placeholder_text="Enter project name...", width=40)
+        self.project_name_entry.grid(row=0, column=0, columnspan=3, padx=10, pady=5)
+        self.project_name_error = ctk.CTkLabel(self, text="", text_color=RED)
+        self.project_name_error.grid(row=1, column=0, columnspan=3, padx=10, pady=2)
+
+    def create_list_section(self):
+        # List name entry and error label
+        self.list_name_entry = ctk.CTkEntry(self, corner_radius=30,
+                                            placeholder_text="Enter list name...", width=40)
+        self.list_name_entry.grid(row=2, column=0, columnspan=3, padx=10, pady=5)
+        self.list_name_error = ctk.CTkLabel(self, text="", text_color=RED)
+        self.list_name_error.grid(row=3, column=0, columnspan=3, padx=10, pady=2)
+
+    def create_task_section(self):
+        # Task name entry and error label
+        self.task_name_entry = ctk.CTkEntry(self, corner_radius=30,
+                                            placeholder_text="Enter task name...", width=40)
+        self.task_name_entry.grid(row=4, column=0, columnspan=3, padx=10, pady=5)
+        self.task_name_error = ctk.CTkLabel(self, text="", text_color=RED)
+        self.task_name_error.grid(row=5, column=0, columnspan=3, padx=10, pady=2)
+
+    def create_buttons(self):
+        # Create project, create list, add task buttons
+        create_project_button = ctk.CTkButton(self, text="Create Project", hover_color=THEME_LIGHT_BLUE,
+                                          fg_color=THEME_BLUE, border_width=2, border_color=THEME_BLUE,
+                                          corner_radius=8, width=20)
+        create_project_button.grid(row=6, column=0, columnspan=3, padx=10, pady=5)
         
         
         
+class EditSidepanel(Sidepanel):
+    def __init__(self, master, db, start_pos, end_pos, projectname):
+        super().__init__(master, db, start_pos, end_pos, f"EDIT {projectname.upper()}")
+        
+    
 ############################################### CTkButton Frame ###############################################
 
 
