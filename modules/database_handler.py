@@ -30,6 +30,16 @@ class Database:
         self.cursor.execute('''DELETE FROM tasks WHERE id = ?''', (task_id,))
         self.conn.commit()
         return self.cursor.lastrowid
+    
+    def delete_list(self, project, mylist):
+        self.cursor.execute('''DELETE FROM tasks WHERE project = ? AND list = ?''', (project, mylist))
+        self.conn.commit()
+        return self.cursor.lastrowid
+    
+    def delete_project(self, project):
+        self.cursor.execute('''DELETE FROM tasks WHERE project = ?''', (project,))
+        self.conn.commit()
+        return self.cursor.lastrowid
 
     def delete_all_todos(self):
         self.cursor.execute('''DELETE FROM tasks''')
@@ -41,6 +51,16 @@ class Database:
         self.conn.commit()
         return self.cursor.lastrowid
 
+    def update_project_name(self, old_name, new_name):
+        self.cursor.execute('''UPDATE tasks SET project = ? WHERE project = ?''', (new_name, old_name))
+        self.conn.commit()
+        return self.cursor.lastrowid
+    
+    def update_list_name(self, project_name, old_name, new_name):
+        self.cursor.execute('''UPDATE tasks SET list = ? WHERE list = ? AND project = ?''', (new_name, old_name, project_name))
+        self.conn.commit()
+        return self.cursor.lastrowid
+    
     def search_todo_by_project(self, project):
         self.cursor.execute('''SELECT * FROM tasks WHERE project = ?''', (project,))
         return [dict(row) for row in self.cursor.fetchall()]

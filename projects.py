@@ -7,6 +7,7 @@ License: Apache-2.0
 import customtkinter as ctk
 import tkinter
 from tkinter import filedialog
+import tkinter.ttk as ttk
 from modules.CTkDataVisualizingWidgets import * #https://github.com/ZikPin/CTkDataVisualizingWidgets
 from modules.CTkScrollableDropdown import *
 from CTkMessagebox import CTkMessagebox
@@ -108,7 +109,7 @@ class App(ctk.CTk, AsyncCTk):
         self.sessionstab.grid(padx=25, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
         
         
-        self.music_switch_img = ctk.CTkImage(dark_image=Image.open("./images/Switches/off-ui.png"), size=(35,20))
+        self.music_switch_img = ctk.CTkImage(dark_image=Image.open("./images/Configuration/switch-off.png"))
         self.music_switch = ctk.CTkButton(self.sidebar_frame, text="Ambient Mode", anchor="w", image=self.music_switch_img, command=self.music_switch_event, fg_color="gray4", hover=False, corner_radius=20, font=UBUNTU(size=14))
         self.music_switch.grid(row=5, column=0, sticky="nsew", padx=25,pady=(8,100), columnspan=2)
         self.music_switch.bind("<Enter>", self.hover_cursor_on)
@@ -182,7 +183,7 @@ class App(ctk.CTk, AsyncCTk):
         self.quotes_author_label = ctk.CTkLabel(self.quotes_frame, text=f"{self.quotes[self.quote_no]['author']}", font=HELVETICA(size=20, weight="normal"), fg_color="transparent")
         self.quotes_author_label.grid(row=1, column=0, pady=(0,0), padx=120, columnspan=8, sticky="nsew")
         
-        self.change_quote_btn = CursorButton(self.quotes_frame, text="Refresh Quotes", command=self.change_quote_event, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
+        self.change_quote_btn = CursorButton(self.quotes_frame, text="Refresh Quotes", image=RELOAD_IMG, command=self.change_quote_event, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
         self.change_quote_btn.grid(row=2, column=0, pady=(40,40), padx=120, columnspan=2)
         
         
@@ -220,8 +221,9 @@ class App(ctk.CTk, AsyncCTk):
         
         self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
         self.entry_todo.grid(row=4, column=0, pady=(20,5), padx=(20,0),  sticky="ew", columnspan=7)
-        self.plusimg = ctk.CTkImage(dark_image=Image.open("./images/Tags/plus-ui.png"), size=(50,50))
-        self.add_todo_button = ctk.CTkButton(self.home, text="", image=self.plusimg, command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="transparent", width=3, hover=False)
+        
+        ADD_IMG.configure(size=(50,50))
+        self.add_todo_button = ctk.CTkButton(self.home, text="", image=ADD_IMG, command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="transparent", width=3, hover=False)
         self.add_todo_button.grid(row=4, column=0, pady=(20,0), padx=(10,20), columnspan=8, sticky="e")
         self.add_todo_button.bind("<Enter>", self.hover_cursor_on)
         self.add_todo_button.bind("<Leave>", self.hover_cursor_off)
@@ -272,8 +274,8 @@ class App(ctk.CTk, AsyncCTk):
             project_main_frame = ctk.CTkFrame(self.todoxyframe, fg_color="transparent")
             project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
             
-            project_edit_button = CursorButton(project_main_frame, text="✎ Edit", font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.toggle_edit_sidepanel(p))
-            project_delete_button = CursorButton(project_main_frame, text="⌦ Delete", font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
+            project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.toggle_edit_sidepanel(p))
+            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
             
             if self.project_columns == 8:
                 self.project_rows += 1
@@ -412,18 +414,18 @@ class App(ctk.CTk, AsyncCTk):
     def music_switch_event(self):
         if not hasattr(self, "music_switch_var"):
             self.music_switch_var = True
-            self.music_switch_img.configure(dark_image=Image.open("./images/Switches/on-ui.png"))
+            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-on.png"))
             self.play()
             return
         if self.music_switch_var:
             self.music_switch_var = False
-            self.music_switch_img.configure(dark_image=Image.open("./images/Switches/off-ui.png"))
+            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-off.png"))
             self.paused = True
             self.music.music.pause()
             return
         if not self.music_switch_var:
             self.music_switch_var = True
-            self.music_switch_img.configure(dark_image=Image.open("./images/Switches/on-ui.png"))
+            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-on.png"))
             self.play()
             return
             
@@ -440,7 +442,7 @@ class App(ctk.CTk, AsyncCTk):
                 self.music.music.play(-1, fade_ms=2000)
             else:
                 CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Select a valid format to play music (mp3/ogg/wav).", sound=True, option_1="Okay")
-                self.music_switch_img.configure(dark_image=Image.open("./images/Switches/off-ui.png"))
+                self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-off.png"))
                 del self.music_switch_var
         else:
             self.music.music.unpause()
@@ -883,11 +885,8 @@ class ProjectFrame(ctk.CTkScrollableFrame):
         self.rows = 0
         
         self.mylist_list = []
-        self.listframes = []
         
         self.load_projects()
-        
-        self.click = False
         
     def load_projects(self):
         projects = self.db.search_todo_by_project(self.projectname)
@@ -1036,7 +1035,23 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
         else:
             self.is_closed = True
             self.master.current_sidepanel = None
+    
+    
+    def load_buttons(self, checkcommand, pady, place="down"):
+        self.checkbutton = CursorButton(self, command=checkcommand, fg_color=THEME_BLUE, text_color="white", text=CHECK, border_width=2, hover_color=THEME_LIGHT_BLUE, border_color=THEME_LIGHT_BLUE, corner_radius=20)
+        self.cancelbutton = CursorButton(self, command=self.animate, fg_color=THEME_RED, text_color="white", text=CROSS, border_width=2, hover_color=RED, border_color=RED, corner_radius=30)
+        if place == "down":
+            self.checkbutton.grid(column=0, row=1, columnspan=2, sticky="sew", padx=15, pady=(pady,0))
+            self.cancelbutton.grid(column=2, row=1, columnspan=2, sticky="sew", padx=15, pady=(pady,0))
+        else:
+            self.checkbutton.grid(column=0, row=0, columnspan=2, sticky="new", padx=15, pady=(0,pady))
+            self.cancelbutton.grid(column=2, row=0, columnspan=2, sticky="new", padx=15, pady=(0,pady))
         
+    def clear_entries(self, entries):
+        for i in entries:
+            i.delete(0, "end")
+            
+            
         
 class CreateSidepanel(Sidepanel):
     def __init__(self, master, db, start_pos, end_pos):
@@ -1046,27 +1061,27 @@ class CreateSidepanel(Sidepanel):
         self.db = db
 
         self.load_createproject_frame()
-
+        self.load_buttons(self.create_project_event, 50)
 
     def load_createproject_frame(self):
         self.createproject_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.createproject_frame.grid_columnconfigure((0,1,2,3),weight=1)
         self.createproject_frame.grid(column=0, row=0, sticky="nsew", columnspan=4, padx=10, pady=5)
-        ctk.CTkLabel(self.createproject_frame, text="- There must be at least one List and a Task inside it\nto create a new project.\n- To create a List in an existing project,\nenter the exact project title.\n- To create a Task,\nenter the exact Project and List titles.", font=UBUNTU(12, 'normal'), justify="left").grid(column=0, row=0, sticky="w", padx=20, pady=15, columnspan=4)
+        ctk.CTkLabel(self.createproject_frame, text="- There must be at least one List and a Task inside it\nto create a new project.\n- To create a List in an existing project,\nenter the exact project title.\n- To create a Task,\nenter the exact Project and List titles.", font=UBUNTU(12, 'normal'), justify="left").grid(column=0, row=0, sticky="w", padx=20, pady=(10,20), columnspan=4)
         
-        ctk.CTkLabel(self.createproject_frame, text="New/Existing Project Title:", font=UBUNTU(15), justify="left", anchor="w").grid(column=0, row=1, sticky="nsew", padx=(20,0), pady=(60,20), columnspan=1)
-        self.createproject_frame_projectentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="Social Media Detox", font=UBUNTU(size=12, weight="normal"), corner_radius=50, height=30, fg_color=NAVY_BLUE)
-        self.createproject_frame_projectentry.grid(column=1, row=1, sticky="ew", padx=5, pady=(60,20), columnspan=3)
+        ttk.Separator(self.createproject_frame).grid(column=0, row=1, columnspan=4, sticky="ew")
         
-        ctk.CTkLabel(self.createproject_frame, text="List Title:", font=UBUNTU(15), justify="left", anchor="w").grid(column=0, row=2, sticky="nsew", padx=(20,0), pady=10, columnspan=1)
-        self.createproject_frame_listentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="No Instagram", font=UBUNTU(size=12, weight="normal"), corner_radius=50, height=30, fg_color=NAVY_BLUE)
-        self.createproject_frame_listentry.grid(column=1, row=2, sticky="ew", padx=5, pady=20, columnspan=3)
+        ctk.CTkLabel(self.createproject_frame, text="New/Existing Project Title:", font=UBUNTU(13), justify="left", anchor="w").grid(column=0, row=2, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=4)
+        self.createproject_frame_projectentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="Social Media Detox", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+        self.createproject_frame_projectentry.grid(column=0, row=3, sticky="ew", padx=5, pady=(5,0), columnspan=4)
         
-        ctk.CTkLabel(self.createproject_frame, text="First Task:", font=UBUNTU(15), justify="left", anchor="w").grid(column=0, row=3, sticky="nsew", padx=(20,0), pady=10, columnspan=1)
-        self.createproject_frame_taskentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="Day 1", font=UBUNTU(size=12, weight="normal"), corner_radius=50, height=30, fg_color=NAVY_BLUE)
-        self.createproject_frame_taskentry.grid(column=1, row=3, sticky="ew", padx=5, pady=20, columnspan=3)
+        ctk.CTkLabel(self.createproject_frame, text="New/Existing List Title:", font=UBUNTU(13), justify="left", anchor="w").grid(column=0, row=4, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=4)
+        self.createproject_frame_listentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="No Instagram", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+        self.createproject_frame_listentry.grid(column=0, row=5, sticky="ew", padx=5, pady=(5,0), columnspan=4)
         
-        self.load_buttons(self.create_project_event, 70)
+        ctk.CTkLabel(self.createproject_frame, text="New To-Do Title:", font=UBUNTU(13), justify="left", anchor="w").grid(column=0, row=6, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=4)
+        self.createproject_frame_taskentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="Day 1", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+        self.createproject_frame_taskentry.grid(column=0, row=7, sticky="ew", padx=5, pady=(5,0), columnspan=4)
         
     
     def create_project_event(self):
@@ -1104,14 +1119,14 @@ class CreateSidepanel(Sidepanel):
             last_project_main_frame = self.master.project_main_frame_list[-1]
             project_main_frame = ctk.CTkFrame(self.master.todoxyframe, fg_color="transparent")
             project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
-            project_edit_button = CursorButton(project_main_frame, text="✎ Edit", font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.master.toggle_edit_sidepanel(p))
-            project_delete_button = CursorButton(project_main_frame, text="⌦ Delete", font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
+            project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.master.toggle_edit_sidepanel(p))
+            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
             
             if self.master.project_columns == 8:
                 self.master.project_rows += 1
                 self.master.project_columns = 0
                     
-            if self.master.project_frame_list[-1].columnspan == "big":
+            if self.master.project_frame_list[-1].todocolumnspan == "big":
                 last_project_main_frame.grid_forget()
                 last_project_main_frame.grid(row=self.master.project_rows, column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
                 project_main_frame.grid(row=self.master.project_rows, column=4, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
@@ -1144,23 +1159,136 @@ class CreateSidepanel(Sidepanel):
         self.master.progressbar.set(self.master.percent())
         self.master.update_progresslabel()
         
-    def load_buttons(self, checkcommand, pady):
-        self.checkbutton = CursorButton(self, command=checkcommand, fg_color=THEME_BLUE, text_color="white", text="✓", border_width=2, hover_color=THEME_LIGHT_BLUE, border_color=THEME_LIGHT_BLUE, corner_radius=20)
-        self.cancelbutton = CursorButton(self, command=self.animate, fg_color=THEME_RED, text_color="white", text="✗", border_width=2, hover_color=RED, border_color=RED, corner_radius=30)
-        self.checkbutton.grid(column=0, row=1, columnspan=2, sticky="sew", padx=15, pady=(pady,0))
-        self.cancelbutton.grid(column=2, row=1, columnspan=2, sticky="sew", padx=15, pady=(pady,0))
-        
-        
-    def clear_entries(self, entries):
-        for i in entries:
-            i.delete(0, "end")
-        
         
 class EditSidepanel(Sidepanel):
     def __init__(self, master, db, start_pos, end_pos, projectname):
         super().__init__(master, db, start_pos, end_pos, f"EDIT {projectname.upper()}")
         
+        self.master = master
+        self.projectname = projectname
+        self.removed_tasks = {}
+        self.removed_lists = []
+        self.editproject_frame_listentries = {}
+        self.projectframe = self.master.search_projectframe(self.projectname)
+        self.all_entries = []
+        self.permanently_removed = []
+        self.load_editproject_frame()
+        self.load_buttons(self.edit_project_event, 30, "up")
+        
+    def load_editproject_frame(self):
+        self.editproject_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.editproject_frame.grid(column=0, row=1, sticky="nsew", columnspan=4, padx=10, pady=5)
+        self.editproject_frame.grid_columnconfigure((0,1,2,3), weight=1)
+        ctk.CTkLabel(self.editproject_frame, text="- Rename Project and its list(s).\n- Leave the textbox empty for no changes.", font=UBUNTU(12, 'normal'), justify="left").grid(column=0, row=0, sticky="w", padx=20, pady=(0,15), columnspan=4)
+        
+        ttk.Separator(self.editproject_frame).grid(column=0, row=1, columnspan=4, sticky="ew")
+        
+        ctk.CTkLabel(self.editproject_frame, text="Rename Project:", font=UBUNTU(15), justify="left", anchor="w").grid(column=0, row=2, sticky="nsew", padx=(5,0), pady=(15,5), columnspan=4)
+        self.editproject_frame_projectentry = ctk.CTkEntry(self.editproject_frame, placeholder_text=f"{self.projectname}", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+        self.editproject_frame_projectentry.grid(column=0, row=3, sticky="ew", padx=(5,5), pady=(5,20), columnspan=4)
+        
+        self.all_entries.append(self.editproject_frame_projectentry)
+        ttk.Separator(self.editproject_frame).grid(column=0, row=4, columnspan=4, sticky="ew")
+        
+        j = 5
+        
+        mylists = self.projectframe.mylist_list
+        for i, mylist in enumerate(mylists):
+            label = ctk.CTkLabel(self.editproject_frame, text=f"{SUB}{mylist.listname.upper()}:", font=UBUNTU(15))
+            label.grid(column=0, row=j, sticky="nsw", padx=(5,0), pady=(15,5), columnspan=4)
+            
+            ctk.CTkButton(self.editproject_frame, command=lambda l=mylist, lab=label: self.temp_remove_list(l, lab), text=f"", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED,   hover_color=RED, width=5).grid(column=0, row=j, sticky="e", padx=(10,0), pady=(5,5), columnspan=4)
+            
+            editproject_frame_listentry = ctk.CTkEntry(self.editproject_frame, placeholder_text=f"A cool new name for the list...", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+            editproject_frame_listentry.grid(column=0, row=j+1, sticky="ew", padx=(5,5), pady=(5,5), columnspan=4)
+            
+            self.all_entries.append(editproject_frame_listentry)
+            self.editproject_frame_listentries[mylist.listname] = editproject_frame_listentry
+            j += 2
+            values = self.db.search_todo_by_list(mylist.listname, self.projectname)
+            
+            for val in values:
+                seclabel = ctk.CTkLabel(self.editproject_frame, text=f"{SUBSUB}{textwrap.fill(val['task_name'],30)}", font=UBUNTU(12, "bold"), justify="left", anchor="w")
+                seclabel.grid(column=0, row=j, sticky="nsew", padx=(5,10), pady=(5,5), columnspan=4)
+                ctk.CTkButton(self.editproject_frame, command=lambda t=val['id'], l=seclabel, m=mylist: self.temp_remove_task(t, l, m), text=f"{CROSS}", font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED,   hover_color=RED, width=5).grid(column=0, row=j, sticky="e", padx=(10,0), pady=(5,5), columnspan=4)
+                j += 1
+            if not i == len(mylists) - 1:
+                ttk.Separator(self.editproject_frame).grid(column=0, row=j, columnspan=4, sticky="ew", pady=(10,5))
+                j+=1
+        
+    def temp_remove_task(self, task, label, mylist):
+        if task in self.permanently_removed:
+            return
+        if not task in self.removed_tasks:
+            label.cget("font").configure(overstrike=True)
+            self.removed_tasks[task] = mylist
+        else:
+            label.cget("font").configure(overstrike=False)
+            del self.removed_tasks[task]
+        
+    def temp_remove_list(self, mylist, label):
+        if mylist in self.permanently_removed:
+            return
+        if not mylist in self.removed_lists:
+            label.cget("font").configure(overstrike=True)
+            self.removed_lists.append(mylist)
+        else:
+            label.cget("font").configure(overstrike=False)
+            self.removed_lists.remove(mylist)
     
+    def edit_project_event(self):
+        renamed_project = self.editproject_frame_projectentry.get()
+        
+        for i in self.editproject_frame_listentries:
+            if self.editproject_frame_listentries[i].get().strip():
+                get = self.editproject_frame_listentries[i].get()
+                self.db.update_list_name(self.projectname, i, get)
+                self.editproject_frame_listentries[i].configure(placeholder_text=get)
+                self.projectframe.search_listframe(i).configure(label_text=f"⇲ {get}")
+                
+        if renamed_project.strip():
+            self.db.update_project_name(self.projectname, renamed_project)
+            self.projectframe.configure(label_text=renamed_project)
+            self.projectname = renamed_project
+            self.editproject_frame_projectentry.configure(placeholder_text=renamed_project)
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f"Congrats! Your Project is renamed to '{renamed_project}'", sound=True, option_1="Sounds cool!")
+                
+        if self.removed_tasks != {}:
+            dialog = ctk.CTkInputDialog(text="Type 'delete' to confirm the deletion of task(s).", title="LakshApp")
+            inp = dialog.get_input()
+            if inp:
+                if inp.lower() == 'delete':
+                    for i in self.removed_tasks:
+                        self.db.delete_todo(i)
+                        for j in self.removed_tasks[i].checkboxes:
+                            if j.task_id == i:
+                                j.grid_forget()
+                                self.removed_tasks[i].checkboxes.remove(j)
+                        self.permanently_removed.append(i)
+                    self.removed_tasks = {}
+                    CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task(s) were removed from your To-Do List!", sound=True, option_1="There we go!")
+                            
+        if self.removed_lists != []:
+            dialog = ctk.CTkInputDialog(text="Type 'delete' to confirm the deletion of list(s).", title="LakshApp")
+            inp = dialog.get_input()
+            if inp:
+                if inp.lower() == 'delete':
+                    for i in self.removed_lists:
+                        self.db.delete_list(self.projectname, i.listname)
+                        for j in self.projectframe.mylist_list:
+                            if j == i:
+                                info = j.grid_info()
+                                j.grid_forget()
+                                if self.projectframe.mylist_list[-1].todocolumnspan == "small":
+                                    self.projectframe.mylist_list[-1].grid_forget()
+                                    self.projectframe.mylist_list[-1].grid(row=info['row'], column=0, padx=10, pady=10, sticky="ew", columnspan=8)
+                                self.projectframe.mylist_list.remove(j)
+                        self.permanently_removed.append(i)
+                    self.removed_lists = []
+                    CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The list(s) were removed from your current Project!", sound=True, option_1="There we go!")
+                            
+        self.clear_entries(self.all_entries)
+        
 ############################################### CTkButton Frame ###############################################
 
 
