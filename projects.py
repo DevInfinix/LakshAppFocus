@@ -19,6 +19,7 @@ import pyperclip
 import pygame
 import json
 import random
+import textwrap
 
 import os
 from os import environ
@@ -268,7 +269,7 @@ class App(ctk.CTk, AsyncCTk):
         for i, project in enumerate(totals):
             project_main_frame = ctk.CTkFrame(self.todoxyframe, fg_color="transparent")
             project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
-            project_frame = ProjectFrame(self, project_main_frame, db=self.db, projectname=project)
+            
             project_edit_button = CursorButton(project_main_frame, text="✎ Edit", font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.toggle_edit_sidepanel(p))
             project_delete_button = CursorButton(project_main_frame, text="⌦ Delete", font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
             
@@ -278,11 +279,15 @@ class App(ctk.CTk, AsyncCTk):
 
             if (i == len(totals) - 1) and (len(totals) % 2 != 0):
                 project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
+                
+                project_frame = ProjectFrame(self, project_main_frame, self.db, project, "big")
                 project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
                 project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
                 project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
             else:
                 project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
+                
+                project_frame = ProjectFrame(self, project_main_frame, self.db, project, "small")
                 project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
                 project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
                 project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
@@ -859,12 +864,13 @@ class App(ctk.CTk, AsyncCTk):
 
 
 class ProjectFrame(ctk.CTkScrollableFrame):
-    def __init__(self, root, base_frame, db, projectname):
+    def __init__(self, root, base_frame, db, projectname, columnspan):
         super().__init__(base_frame, label_text=projectname, label_fg_color="gray8", border_width=3, border_color=BLACK, corner_radius=18, fg_color="gray13", label_font=UBUNTU(size=15))
         
         self.root = root
         self.db = db
         self.projectname = projectname
+        self.columnspan = columnspan
         
         self.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
         
@@ -890,10 +896,10 @@ class ProjectFrame(ctk.CTkScrollableFrame):
                 self.rows += 1
                 self.columns = 0
             if (i == len(totals) - 1) and (len(totals) % 2 != 0):
-                todo_frame = ToDoFrame(self.root, self, self.db, mylist, self.projectname, 8)
+                todo_frame = ToDoFrame(self.root, self, self.db, mylist, self.projectname, projectcolumnspan=self.columnspan, todocolumnspan="big")
                 todo_frame.grid(row=self.rows, column=0, padx=10, pady=10, sticky="ew", columnspan=8)
             else:
-                todo_frame = ToDoFrame(self.root, self, self.db, mylist, self.projectname, 4)
+                todo_frame = ToDoFrame(self.root, self, self.db, mylist, self.projectname, projectcolumnspan=self.columnspan, todocolumnspan="small")
                 todo_frame.grid(row=self.rows, column=self.columns, padx=10, pady=10, sticky="ew", columnspan=4)
             self.columns += 4
             self.mylist_list.append(todo_frame)
@@ -910,7 +916,7 @@ class ProjectFrame(ctk.CTkScrollableFrame):
 
 
 class ToDoFrame(ctk.CTkScrollableFrame):
-    def __init__(self, root, master, db, listname="MY TO-DO LIST", projectname="Default Project", columnspan=4):
+    def __init__(self, root, master, db, listname="MY TO-DO LIST", projectname="Default Project", projectcolumnspan="big", todocolumnspan="big"):
         super().__init__(master, label_text=f"⇲ {listname}", label_fg_color=DULL_BLUE, border_width=1, border_color=WHITE, corner_radius=8, fg_color=NAVY_BLUE, label_font=UBUNTU(size=15))
         
         self.root = root
@@ -919,7 +925,8 @@ class ToDoFrame(ctk.CTkScrollableFrame):
         self.checkboxes = []
         self.listname = listname
         self.projectname = projectname
-        self.columnspan = columnspan
+        self.projectcolumnspan = projectcolumnspan
+        self.todocolumnspan = todocolumnspan
         
         self.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
         
@@ -954,33 +961,20 @@ class ToDoFrame(ctk.CTkScrollableFrame):
             elif checkbox.get() == "off" and checkbox.cget("font").cget("overstrike") == True:
                 checkbox.cget("font").configure(overstrike=False, slant="roman")
                 self.db.update_todo_status(checkbox.task_id, False)
-    
+                
     def wrap(self, text):
-        text = text.split()
-        self.update()
-        if self.columnspan == 4:
-            max_line_length = (self.winfo_reqwidth()/4)-50
+        if self.projectcolumnspan == "big":
+            if self.todocolumnspan == "big":
+                width = 85
+            else:
+                width = 32
         else:
-            max_line_length = (self.winfo_reqwidth()/2)-50
-        print(max_line_length)
-        line_length = 0
-        for i in range(len(text)):
-            line_length += len(text[i])
-            if line_length > max_line_length:
-                text[i - 1] += "\n"
-                line_length = 0
-
-        return " ".join(text)
-        
-    def get(self):
-        if self.checkboxes == [] or not self.checkboxes:
-            print("no checkboxes found", self.checkboxes)
-        checked_checkboxes = []
-        for checkbox in self.checkboxes:
-            checkid = int(checkbox.cget('text').split("|")[0])
-            if (checkbox.get() == "on" or checkbox.get() == "1" or checkbox.get() == 1) and self.db.search_todo_by_id(checkid)['status'] == False:
-                checked_checkboxes.append(checkbox)
-        return checked_checkboxes
+            if self.todocolumnspan == "big":
+                width = 32
+            else:
+                width = 15
+            
+        return textwrap.fill(text, width=width)
 
 
 
