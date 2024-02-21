@@ -14,6 +14,7 @@ from CTkMessagebox import CTkMessagebox
 from async_tkinter_loop import async_handler
 from async_tkinter_loop.mixins import AsyncCTk
 from modules.database_handler import Database
+from modules.splash import SplashApp
 
 from PIL import Image
 import pyperclip
@@ -42,12 +43,19 @@ ctk.set_default_color_theme("./themes/dark-blue.json")
 class App(ctk.CTk, AsyncCTk):
     def __init__(self):
         super().__init__()
+        self.withdraw()
+        print('LakshApp initialized...')
+        self.splashapp = SplashApp(self)
+        self.splashapp.attributes('-topmost', True)
+        print('SplashScreen initialized...')
         self.title("LakshApp - Stay Focused and Motivated")
         self.resizable(False, False)
         #self.iconbitmap('./images/lakshapp.ico')
         self.width = 1100
         self.height = 620
-        self.geometry(f"{1100}x{620}")
+        place_x = (self.winfo_screenwidth()//2) - (self.width//2)
+        place_y = (self.winfo_screenheight()//2) - (self.height//2)
+        self.geometry(f"{self.width}x{self.height}+{place_x}+{place_y}")
         self.grid_columnconfigure((1,2,3), weight=1)
         self.grid_columnconfigure(0, weight=0)
         self.grid_rowconfigure(0, weight=1)
@@ -375,6 +383,15 @@ class App(ctk.CTk, AsyncCTk):
         self.send_button = CursorButton(self.sessions, text="➤", command=self.add_own_message, font=UBUNTU(size=30, weight="normal"), corner_radius=100, fg_color="transparent", width=2, height=60, hover_color="gray4")
         self.send_button.grid(row=6, column=0, pady=(0,8), padx=(15,15), columnspan=8, sticky="se", rowspan=1)
         
+        
+        
+############################################### SPLASH SCREEN ###############################################
+
+
+        self.splashapp.destroy()
+        self.deiconify()
+        self.lift()
+        print('LakshApp is Running!')
         
             
 ############################################### FUNCTIONS ###############################################
@@ -1323,9 +1340,11 @@ class ImageButton(ctk.CTkButton):
 
 
 
+
 app = App()
 
 
+        
 def enter(event):
     if app.tab_view.get() == 'HOME':
         app.add_todo_event()
