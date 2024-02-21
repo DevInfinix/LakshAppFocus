@@ -72,6 +72,10 @@ class Database:
     def search_todo_by_id(self, task_id):
         self.cursor.execute('''SELECT * FROM tasks WHERE id = ?''', (task_id,))
         return dict(self.cursor.fetchone())
+    
+    def check_todo_by_id(self, task_id):
+        self.cursor.execute('''SELECT * FROM tasks WHERE id = ?''', (task_id,))
+        return bool(self.cursor.fetchone())
 
     def get_completed_tasks(self):
         self.cursor.execute('''SELECT * FROM tasks WHERE status = ?''', (True,))
