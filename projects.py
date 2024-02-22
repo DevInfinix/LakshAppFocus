@@ -35,7 +35,7 @@ from themes.fonts import *
 
 
 dotenv.load_dotenv()
-WEBSOCKET_SERVER=os.getenv('WEBSOCKET_SERVER')
+WEBSOCKET_SERVER='ws://infinix-v4.duckdns.org:8080'
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '0'
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("./themes/dark-blue.json") 
@@ -63,20 +63,6 @@ class App(ctk.CTk, AsyncCTk):
         self.role = None
         
         
-        ############################################### PYGAME MUSIC ###############################################
-         
-        
-         
-        self.music = pygame.mixer
-        self.music.init()
-        self.paused = False
-        self.trumpetsound = self.music.Sound('./sounds/trumpets.mp3')
-        self.trumpetsound.set_volume(0.1)
-        self.levelsound = self.music.Sound('./sounds/level.mp3')
-        self.levelsound.set_volume(0.1)
-        
-        
-        
         ############################################### DATABASE ###############################################
         
         
@@ -89,41 +75,10 @@ class App(ctk.CTk, AsyncCTk):
         self.db.create_table()
         
         
-        
-        ############################################### SIDEBAR ###############################################
-        
+        ############################################### SIDEBAR INITIALIZE ###############################################
         
         
-        self.sidebar_frame = ctk.CTkFrame(self, corner_radius=18, fg_color="gray8")
-        self.sidebar_frame.grid(row=0, column=0, sticky="nsew", padx=(15,7.5),pady=15, columnspan=1)
-        self.sidebar_frame.grid_columnconfigure((0,1), weight=1)
-        self.sidebar_frame.grid_rowconfigure((0,1,2,3,4,5), weight=1)
-        
-        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="LakshApp", font=UBUNTU(size=28), text_color=LIGHT_BLUE, justify="center")
-        self.logo_label.grid(row=0, column=0, padx=25, pady=(100,60),columnspan=2, rowspan=1, sticky="ew")
-        
-        
-        
-        ############################################### TABS BUTTONS ###############################################
-        
-        
-        
-        self.hometab = CursorButton(master=self.sidebar_frame, text=" Home ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_home, font=UBUNTU())
-        self.hometab.grid(padx=25, pady=8, row=1, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.todotab = CursorButton(master=self.sidebar_frame, text=" To-Do ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_todo, font=UBUNTU())
-        self.todotab.grid(padx=25, pady=8, row=2, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.statstab = CursorButton(master=self.sidebar_frame, text=" My Progress ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_stats, font=UBUNTU())
-        self.statstab.grid(padx=25, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.sessionstab = CursorButton(master=self.sidebar_frame, text=" Live Sessions ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_sessions, font=UBUNTU())
-        self.sessionstab.grid(padx=25, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
-        
-        
-        self.music_switch_img = ctk.CTkImage(dark_image=Image.open("./images/Configuration/switch-off.png"))
-        self.music_switch = ctk.CTkButton(self.sidebar_frame, text="Ambient Mode", anchor="w", image=self.music_switch_img, command=self.music_switch_event, fg_color="gray4", hover=False, corner_radius=20, font=UBUNTU(size=14))
-        self.music_switch.grid(row=5, column=0, sticky="nsew", padx=25,pady=(8,100), columnspan=2)
-        self.music_switch.bind("<Enter>", self.hover_cursor_on)
-        self.music_switch.bind("<Leave>", self.hover_cursor_off)
-        
+        self.sidebar = Sidebar(self)
         
         
         ############################################### MAINFRAME ###############################################
@@ -150,11 +105,11 @@ class App(ctk.CTk, AsyncCTk):
         self.sessions = self.tab_view.add("SESSIONS")
         
         self.tab_view.set("HOME")
-        self.hometab.configure(fg_color=THEME_BLUE)
+        self.sidebar.hometab.configure(fg_color=THEME_BLUE)
         
         self.tab_view._segmented_button.grid_forget()
         
-        self.tabsbutton = [self.hometab, self.todotab, self.statstab, self.sessionstab]
+        
         
         
         
@@ -426,43 +381,15 @@ class App(ctk.CTk, AsyncCTk):
         self.home_listselector.set(db[0]['list'])
         self.home_projectselector.set(choice)
         
-    def music_switch_event(self):
-        if not hasattr(self, "music_switch_var"):
-            self.music_switch_var = True
-            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-on.png"))
-            self.play()
-            return
-        if self.music_switch_var:
-            self.music_switch_var = False
-            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-off.png"))
-            self.paused = True
-            self.music.music.pause()
-            return
-        if not self.music_switch_var:
-            self.music_switch_var = True
-            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-on.png"))
-            self.play()
-            return
-            
-    
-    def play_youtube(self):
-        dialog = ctk.CTkInputDialog(text="Search the perfect ambience on YouTube.", title="LakshApp")
-        inp = dialog.get_input()
-        
-    def play(self):
-        if not self.paused:   
-            file_path = filedialog.askopenfilename(title="Select an ambient song", filetypes=(("Audio Files", ".wav .ogg .mp3"),   ("All Files", "*.*")))
-            if file_path:
-                self.music.music.load(file_path)
-                self.music.music.play(-1, fade_ms=2000)
-            else:
-                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Select a valid format to play music (mp3/ogg/wav).", sound=True, option_1="Okay")
-                self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-off.png"))
-                del self.music_switch_var
-        else:
-            self.music.music.unpause()
-
-
+    def select_all(self):
+        if self.tab_view.get() == 'HOME':
+            self.entry_todo.select_range(0, 'end')
+            self.entry_todo.icursor('end')
+            return 'break'
+        if self.tab_view.get() == 'SESSIONS':
+            self.send_area.select_range(0, 'end')
+            self.send_area.icursor('end')
+            return 'break'
 
     def change_quote_event(self):
         if self.quote_no == (len(self.quotes)-1):
@@ -484,7 +411,7 @@ class App(ctk.CTk, AsyncCTk):
     def delete_project_frame(self, frame, project):
         dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Hey hey! Do you really wish to delete the project?", sound=True, option_1="Nevermind!", option_2="Delete")
         inp = dialog.get()
-        if inp.strip():
+        if inp:
             if inp.lower() == 'delete':
                 main_frame_index = self.project_main_frame_list.index(frame)
                 previous_frame = None
@@ -572,90 +499,7 @@ class App(ctk.CTk, AsyncCTk):
     def update_progresslabel(self):
         self.progresslabel.configure(text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)")
         
-    def set_current_tab(self, current_tab):
-        if hasattr(self, "current_sidepanel"):
-            if self.current_sidepanel:
-                if (not self.current_sidepanel.is_closed):
-                    self.current_sidepanel.animate_backwards()
-        for tab in self.tabsbutton:
-            if current_tab == tab:
-                tab.configure(fg_color=THEME_BLUE)
-            else:
-                tab.configure(fg_color="gray13")
-        
-    def set_home(self):
-        self.tab_view.set("HOME")
-        self.set_current_tab(self.hometab)
-        
-    def set_todo(self):
-        self.tab_view.set("TO-DO")
-        self.set_current_tab(self.todotab)
-        
-    @async_handler
-    async def set_stats(self):
-        dates = self.db.get_total_tasks()
-        if dates == []:
-            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="You haven't completed any tasks yet.\nStart completing now!", sound=True, option_1="Oh shit!")
-        else:
-            values = {}
-            for val in dates:
-                date_tuple = (val['day'], val['month'], val['year'])
-                if date_tuple not in values:
-                    values[date_tuple] = 10
-            if hasattr(self, "calendar"):
-                self.calendar.destroy()
-            self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color=WHITE,
-                                fg_color=NAVY_BLUE, title_bar_border_width=2, title_bar_border_color="gray80",
-                                title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
-                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color=WHITE,
-                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
-                    )
-            self.calendar.grid(row=1, column=0, pady=(60,60), padx=60, sticky="new", columnspan=2)
-            self.tab_view.set("STATS")
-            self.set_current_tab(self.statstab)
-            
-        
-    @async_handler
-    async def set_sessions(self):
-        if not self.socket:
-            dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="Select 'Start' to host a session. If you have a valid session code, select 'Join'.", sound=True, option_1="Join", option_2="Start")
-            inp = dialog.get()
-            if inp.strip():
-                if inp.lower() == 'start':
-                    dialog2 = ctk.CTkInputDialog(text="Enter your username\nfor the live session.", title="LakshApp")
-                    inp2 = dialog2.get_input()
-                    if inp2:
-                        if inp2 != '':
-                            self.own_username = inp2
-                            await self.start_server(WEBSOCKET_SERVER, inp2)
-                if inp.lower() == 'join':
-                    dialog2 = ctk.CTkInputDialog(text="Enter the code for the live session.", title="LakshApp")
-                    inp2 = dialog2.get_input()
-                    if inp2:
-                        if inp2 != '':
-                            self.server_code = inp2
-                            
-                            dialog3 = ctk.CTkInputDialog(text="Enter your username\nfor the live session.", title="LakshApp")
-                            inp3 = dialog3.get_input()
-                            if inp3:
-                                if inp3 != '':
-                                    self.own_username = inp3
-                                    await self.join_server(WEBSOCKET_SERVER, inp2, inp3)
-        else:
-            self.tab_view.set("SESSIONS")
-            self.set_current_tab(self.sessionstab)
-                
-            
-        
-    def select_all(self):
-        if self.tab_view.get() == 'HOME':
-            self.entry_todo.select_range(0, 'end')
-            self.entry_todo.icursor('end')
-            return 'break'
-        if self.tab_view.get() == 'SESSIONS':
-            self.send_area.select_range(0, 'end')
-            self.send_area.icursor('end')
-            return 'break'
+    
             
             
     @async_handler
@@ -802,7 +646,7 @@ class App(ctk.CTk, AsyncCTk):
                     break
             if event['type'] == 'started':
                 self.tab_view.set("SESSIONS")
-                self.set_current_tab(self.sessionstab)
+                self.sidebar.set_current_tab(self.sessionstab)
                 await asyncio.sleep(1)
                 print(f"Your code is: [{event['code']}]")
                 pyperclip.copy(event['code'])
@@ -810,7 +654,7 @@ class App(ctk.CTk, AsyncCTk):
                 self.socket = socket
             if event['type'] == 'joined':
                 self.tab_view.set("SESSIONS")
-                self.set_current_tab(self.sessionstab)
+                self.sidebar.set_current_tab(self.sessionstab)
                 await asyncio.sleep(1)
                 print(f"You joined {event['code']}")
                 pyperclip.copy(event['code'])
@@ -848,7 +692,7 @@ class App(ctk.CTk, AsyncCTk):
                         CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='The host has been disconnected', sound=True, option_1="Oh shit!")
                         await asyncio.sleep(1)
                         self.tab_view.set("HOME")
-                        self.set_current_tab(self.hometab)
+                        self.sidebar.set_current_tab(self.sidebar.hometab)
                         self.socket = None
                         if role == 'host':
                             return
@@ -860,7 +704,7 @@ class App(ctk.CTk, AsyncCTk):
                             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='You have been disconnected', sound=True, option_1="Oh Shit!")
                             await asyncio.sleep(1)
                             self.tab_view.set("HOME")
-                            self.set_current_tab(self.hometab)
+                            self.sidebar.set_current_tab(self.sidebar.hometab)
                             return
                         else:
                             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message='The participant has been disconnected', sound=True, option_1="Oh shit!")
@@ -1031,6 +875,180 @@ class ToDoFrame(ctk.CTkScrollableFrame):
                 width = 15
             
         return textwrap.fill(text, width=width)
+
+
+
+############################################### SIDEBAR ###############################################
+        
+        
+        
+class Sidebar(ctk.CTkFrame):
+    def __init__(self, master):
+        super().__init__(master, corner_radius=18, fg_color="gray8")
+        
+        self.master = master
+        self.db = self.master.db
+        self.grid(row=0, column=0, sticky="nsew", padx=(15,7.5),pady=15, columnspan=1)
+        self.grid_columnconfigure((0,1), weight=1)
+        self.grid_rowconfigure((0,1,2,3,4,5), weight=1)
+        
+        self.load_logo()
+        self.load_tabs_buttons()
+        self.load_music()
+        
+        self.tabsbutton = [self.hometab, self.todotab, self.statstab, self.sessionstab]
+        
+    def load_logo(self):
+        self.logo_label = ctk.CTkLabel(self, text="LakshApp", font=UBUNTU(size=28), text_color=LIGHT_BLUE, justify="center")
+        self.logo_label.grid(row=0, column=0, padx=25, pady=(100,60),columnspan=2, rowspan=1, sticky="ew")
+    
+    def load_tabs_buttons(self):   
+        self.hometab = CursorButton(master=self, text=" Home ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_home, font=UBUNTU())
+        self.hometab.grid(padx=25, pady=8, row=1, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.todotab = CursorButton(master=self, text=" To-Do ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_todo, font=UBUNTU())
+        self.todotab.grid(padx=25, pady=8, row=2, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.statstab = CursorButton(master=self, text=" My Progress ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_stats, font=UBUNTU())
+        self.statstab.grid(padx=25, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.sessionstab = CursorButton(master=self, text=" Live Sessions ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_sessions, font=UBUNTU())
+        self.sessionstab.grid(padx=25, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
+    
+    
+    def load_music(self):
+        self.music_switch_img = ctk.CTkImage(dark_image=Image.open("./images/Configuration/switch-off.png"))
+        self.music = Music(self.master, self.music_switch_img)
+        self.music_switch = ctk.CTkButton(self, text="Ambient Mode", anchor="w", image=self.music_switch_img, command=self.music.music_switch_event, fg_color="gray4", hover=False, corner_radius=20, font=UBUNTU(size=14))
+        self.music_switch.grid(row=5, column=0, sticky="nsew", padx=25,pady=(8,100), columnspan=2)
+        
+        self.music_switch.bind("<Enter>", self.master.hover_cursor_on)
+        self.music_switch.bind("<Leave>", self.master.hover_cursor_off)
+
+
+    def set_current_tab(self, current_tab):
+        if hasattr(self.master, "current_sidepanel"):
+            if self.master.current_sidepanel:
+                if (not self.master.current_sidepanel.is_closed):
+                    self.master.current_sidepanel.animate_backwards()
+        for tab in self.tabsbutton:
+            if current_tab == tab:
+                tab.configure(fg_color=THEME_BLUE)
+            else:
+                tab.configure(fg_color="gray13")
+        
+    def set_home(self):
+        self.master.tab_view.set("HOME")
+        self.set_current_tab(self.hometab)
+        
+    def set_todo(self):
+        self.master.tab_view.set("TO-DO")
+        self.set_current_tab(self.todotab)
+        
+    @async_handler
+    async def set_stats(self):
+        dates = self.db.get_total_tasks()
+        if dates == []:
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="You haven't completed any tasks yet.\nStart completing now!", sound=True, option_1="Oh shit!")
+        else:
+            values = {}
+            for val in dates:
+                date_tuple = (val['day'], val['month'], val['year'])
+                if date_tuple not in values:
+                    values[date_tuple] = 10
+            if hasattr(self.master, "calendar"):
+                self.master.calendar.destroy()
+            self.master.calendar = CTkCalendarStat(self.master.stats, values, border_width=0, border_color=WHITE,
+                                fg_color=NAVY_BLUE, title_bar_border_width=2, title_bar_border_color="gray80",
+                                title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
+                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color=WHITE,
+                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
+                    )
+            self.master.calendar.grid(row=1, column=0, pady=(60,60), padx=60, sticky="new", columnspan=2)
+            self.master.tab_view.set("STATS")
+            self.set_current_tab(self.statstab)
+            
+        
+    @async_handler
+    async def set_sessions(self):
+        if not self.master.socket:
+            dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="Select 'Start' to host a session. If you have a valid session code, select 'Join'.", sound=True, option_1="Join", option_2="Start")
+            inp = dialog.get()
+            if inp:
+                if inp.lower() == 'start':
+                    dialog2 = ctk.CTkInputDialog(text="Enter your username\nfor the live session.", title="LakshApp")
+                    inp2 = dialog2.get_input()
+                    if inp2:
+                        if inp2 != '':
+                            self.master.own_username = inp2
+                            await self.master.start_server(WEBSOCKET_SERVER, inp2)
+                if inp.lower() == 'join':
+                    dialog2 = ctk.CTkInputDialog(text="Enter the code for the live session.", title="LakshApp")
+                    inp2 = dialog2.get_input()
+                    if inp2:
+                        if inp2 != '':
+                            self.master.server_code = inp2
+                            
+                            dialog3 = ctk.CTkInputDialog(text="Enter your username\nfor the live session.", title="LakshApp")
+                            inp3 = dialog3.get_input()
+                            if inp3:
+                                if inp3 != '':
+                                    self.master.own_username = inp3
+                                    await self.master.join_server(WEBSOCKET_SERVER, inp2, inp3)
+        else:
+            self.master.tab_view.set("SESSIONS")
+            self.set_current_tab(self.sessionstab)
+            
+
+    
+############################################### PYGAME MUSIC ###############################################    
+    
+    
+    
+class Music():
+    def __init__(self, master, music_switch_img):
+        self.master = master
+        self.music = pygame.mixer
+        self.music.init()
+        self.paused = False
+        self.master.trumpetsound = self.music.Sound('./sounds/trumpets.mp3')
+        self.master.trumpetsound.set_volume(0.1)
+        self.master.levelsound = self.music.Sound('./sounds/level.mp3')
+        self.master.levelsound.set_volume(0.1)
+        self.music_switch_img = music_switch_img
+        
+        
+    def music_switch_event(self):
+        if not hasattr(self, "music_switch_var"):
+            self.music_switch_var = True
+            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-on.png"))
+            self.play()
+            return
+        if self.music_switch_var:
+            self.music_switch_var = False
+            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-off.png"))
+            self.paused = True
+            self.music.music.pause()
+            return
+        if not self.music_switch_var:
+            self.music_switch_var = True
+            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-on.png"))
+            self.play()
+            return
+            
+    def play_youtube(self):
+        dialog = ctk.CTkInputDialog(text="Search the perfect ambience on YouTube.", title="LakshApp")
+        inp = dialog.get_input()
+        
+    def play(self):
+        if not self.paused:   
+            file_path = filedialog.askopenfilename(title="Select an ambient song", filetypes=(("Audio Files", ".wav .ogg .mp3"),   ("All Files", "*.*")))
+            if file_path:
+                self.music.music.load(file_path)
+                self.music.music.play(-1, fade_ms=2000)
+            else:
+                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Select a valid format to play music (mp3/ogg/wav).", sound=True, option_1="Okay")
+                self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-off.png"))
+                del self.music_switch_var
+        else:
+            self.music.music.unpause()
 
 
 
@@ -1210,6 +1228,7 @@ class CreateSidepanel(Sidepanel):
         self.master.after(500, self.master.project_sidepanels[project].load_editproject_frame)
         
         
+        
 class EditSidepanel(Sidepanel):
     def __init__(self, master, db, start_pos, end_pos, projectname):
         super().__init__(master, db, start_pos, end_pos, f"EDIT {projectname.upper()}")
@@ -1367,6 +1386,8 @@ class EditSidepanel(Sidepanel):
             except:
                 print('failed to delete', i)
         
+    
+
 ############################################### CTkButton Frame ###############################################
 
 
@@ -1395,13 +1416,12 @@ class ImageButton(ctk.CTkButton):
         self.image = ctk.CTkImage(dark_image=Image.open(image_path), size=(image_width, image_height))
         self.button = ctk.CTkButton(self.master, text="", image=self.image, command=command, font=UBUNTU(size=40, weight="normal"), corner_radius=20, fg_color="transparent", width=3, hover=False)
 
-    
-    
+
+
 ############################################### KEYBINDS ###############################################
 
 
-
-
+    
 app = App()
 
 
