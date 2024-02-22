@@ -10,13 +10,9 @@ License: Apache-2.0
 Version: 1.0.0
 """
 
-THEME_BLUE="#21568B"
-THEME_LIGHT_BLUE="#0278ed"
-THEME_RED="#731a1a"
-LIGHT_BLUE="#91b1cc"
-DULL_BLUE="#33414d"
-NAVY_BLUE_DARK="#020317"
-NAVY_BLUE="#020F43"
-WHITE="white"
-RED="red"
-BLACK="black"
+__version__="1.0.0"
+
+from .database_handler import *
+from .splash import *
+from .CTkDataVisualizingWidgets import * #https://github.com/ZikPin/CTkDataVisualizingWidgets
+from .CTkScrollableDropdown import *

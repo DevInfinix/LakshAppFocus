@@ -34,14 +34,12 @@ pyinstaller==6.4.0
 pyinstaller-hooks-contrib==2024.1
 pyparsing==3.1.1
 pyperclip==1.8.2
-python-dotenv==1.0.1
 pytube==15.0.0
 requests==2.31.0
 requests_download==0.1.2
 rich==13.7.0
 shellingham==1.5.4
 tkfilebrowser==2.3.2
-tkinterdnd2==0.3.0
 typer==0.9.0
 typing_extensions==4.9.0
 urllib3==2.2.0

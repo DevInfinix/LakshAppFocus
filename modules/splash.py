@@ -1,3 +1,17 @@
+"""
+LakshApp - Stay Focused and Motivated
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Advanced TO-DOs and Project Management integrated with Live Sessions, Music and more for Focus and Productivity
+
+Author: DevInfinix
+Copyright: (c) 2024-present DevInfinix
+License: Apache-2.0
+Version: 1.0.0
+"""
+
+__version__ = "1.0.0"
+
 import customtkinter as ctk
 import os
 import random
@@ -26,7 +40,7 @@ class SplashApp(ctk.CTkToplevel):
         #.360
         self.bg = ctk.CTkLabel(self, image=self.get_splash(), text="", fg_color="transparent")
         self.bg.place(x=-76, y=-80)
-        self.label = ctk.CTkButton(self, text="LOADING...", font=ctk.CTkFont(family="Ubuntu", size=18, weight="bold"), fg_color="gray20", corner_radius=30, hover_color="gray13")
+        self.label = ctk.CTkButton(self, text=f"LOADING [v{__version__}]...", font=ctk.CTkFont(family="Ubuntu", size=18, weight="bold"), fg_color="gray20", corner_radius=30, hover_color="gray13")
         self.label.place(relx=0.015, rely=0.01)
         self.label2 = ctk.CTkButton(self, text="🗕  🗖  🗙", font=ctk.CTkFont(family="Ubuntu", size=18, weight="normal"), fg_color="gray20", corner_radius=30, hover_color="gray13")
         self.label2.place(relx=0.665, rely=0.01)

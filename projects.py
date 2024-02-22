@@ -1,38 +1,49 @@
 """
-Advanced TO-DOs integrated with Lice Sessions for Focus and Productivity
+LakshApp - Stay Focused and Motivated
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Advanced TO-DOs and Project Management integrated with Live Sessions, Music and more for Focus and Productivity
+
 Author: DevInfinix
+Copyright: (c) 2024-present DevInfinix
 License: Apache-2.0
+Version: 1.0.0
 """
 
-import customtkinter as ctk
-# import tkinter
-from tkinter import filedialog
-import tkinter.ttk as ttk
-from modules.CTkDataVisualizingWidgets import * #https://github.com/ZikPin/CTkDataVisualizingWidgets
-from modules.CTkScrollableDropdown import *
-from CTkMessagebox import CTkMessagebox
-from async_tkinter_loop import async_handler
-from async_tkinter_loop.mixins import AsyncCTk
-from modules.database_handler import Database
-from modules.splash import SplashApp
+__version__="1.0.0"
 
-from PIL import Image
-import pyperclip
-import json
-import random
-import textwrap
+import logging
+logging.basicConfig(level=logging.DEBUG, format="[LakshApp Error] %(asctime)s - %(levelname)s - %(message)s", filename="lakshapp-logs.txt")
 
-import os
-from os import environ
-import dotenv
-import datetime
-import asyncio
-import websockets
+try:
+    import customtkinter as ctk
+    # import tkinter
+    from tkinter import filedialog
+    import tkinter.ttk as ttk
+    from CTkMessagebox import CTkMessagebox
+    from async_tkinter_loop import async_handler
+    from async_tkinter_loop.mixins import AsyncCTk
+    from modules import *
+    from themes import *
 
-from themes.colors import *
-from themes.fonts import *
+    from PIL import Image
+    import pyperclip
+    import json
+    import random
+    import textwrap
 
-dotenv.load_dotenv()
+    from os import environ
+    import colorama
+    import datetime
+    import asyncio
+    import websockets
+except ImportError as e:
+    logging.critical(f"Couldn't Import Modules: {e}", exc_info=True)
+    print(colorama.Fore.RED + "ImportError: Check logs for more info.")
+    exit(1)
+
+colorama.init(autoreset=True)
+
 WEBSOCKET_SERVER='ws://infinix-v4.duckdns.org:8080'
 
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
@@ -45,10 +56,10 @@ class App(ctk.CTk, AsyncCTk):
     def __init__(self):
         super().__init__()
         self.withdraw()
-        print('LakshApp initialized...')
+        logging.info('LakshApp initialized...')
         self.splashapp = SplashApp(self)
         self.splashapp.attributes('-topmost', True)
-        print('SplashScreen initialized...')
+        logging.info('SplashScreen initialized...')
         self.title("LakshApp - Stay Focused and Motivated")
         self.resizable(False, False)
         #self.iconbitmap('./images/lakshapp.ico')
@@ -62,6 +73,7 @@ class App(ctk.CTk, AsyncCTk):
         self.grid_rowconfigure(0, weight=1)
         self.total_message = 0
         self.role = None
+        self.version = __version__
         
         
         ############################################### DATABASE ###############################################
@@ -75,22 +87,12 @@ class App(ctk.CTk, AsyncCTk):
         
         
         self.sidebar = Sidebar(self)
-        
-        
-        
-        
-        
-        
-        
-        
         self.mainframe = MainFrame(self)
         
         self.home = self.mainframe.home
         self.todo = self.mainframe.todo
         self.stats = self.mainframe.stats
         self.sessions = self.mainframe.sessions
-        
-
         
         
 ############################################### TO-DO TAB ###############################################
@@ -101,7 +103,7 @@ class App(ctk.CTk, AsyncCTk):
         self.todo.grid_rowconfigure((0),weight=1)
 
         self.todoxyframe = ctk.CTkScrollableFrame(self.todo, fg_color="transparent")
-        self.todoxyframe.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
+        self.todoxyframes.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
         self.todoxyframe.grid_rowconfigure((0,1),weight=1)
         self.todoxyframe.grid(column=0, row=0, sticky="nsew")
         self.scrollable_checkbox_frame = None
@@ -232,7 +234,7 @@ class App(ctk.CTk, AsyncCTk):
         self.splashapp.destroy()
         self.deiconify()
         self.lift()
-        print('LakshApp is Running!')
+        logging.info('LakshApp is Running!')
         
             
 ############################################### FUNCTIONS ###############################################
@@ -268,6 +270,10 @@ class App(ctk.CTk, AsyncCTk):
                 
                     
     def delete_project_frame(self, frame, project):
+        if len(self.db.get_total_projects()) <= 1:
+            c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="There must be at least 1 Project. Edit this project or create a new one!", sound=True, option_1="Oh shit!")
+            c.get()
+            return
         dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Hey hey! Do you really wish to delete the project?", sound=True, option_1="Nevermind!", option_2="Delete")
         inp = dialog.get()
         if inp:
@@ -489,7 +495,7 @@ class App(ctk.CTk, AsyncCTk):
                 self.mainframe.tab_view.set("SESSIONS")
                 self.sidebar.set_current_tab(self.sessionstab)
                 await asyncio.sleep(1)
-                print(f"Your code is: [{event['code']}]")
+                logging.info(f"Your code is: [{event['code']}]")
                 pyperclip.copy(event['code'])
                 self.add_other_message(user='System', message=f"Your room's code is: [{event['code']}] | The code has been copied to your clipboard.")
                 self.socket = socket
@@ -497,7 +503,7 @@ class App(ctk.CTk, AsyncCTk):
                 self.mainframe.tab_view.set("SESSIONS")
                 self.sidebar.set_current_tab(self.sessionstab)
                 await asyncio.sleep(1)
-                print(f"You joined {event['code']}")
+                logging.info(f"You joined {event['code']}")
                 pyperclip.copy(event['code'])
                 self.add_other_message(user='System', message=f"You joined {event['code']} | The code has been copied to your clipboard.")
                 self.socket = socket
@@ -529,7 +535,7 @@ class App(ctk.CTk, AsyncCTk):
             if event['type'] == 'disconnected':
                 if event['from'] == 'server':
                     if event['role'] == 'host':
-                        print('The host has been disconnected')
+                        logging.info('The host has been disconnected')
                         CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='The host has been disconnected', sound=True, option_1="Oh shit!")
                         await asyncio.sleep(1)
                         self.mainframe.tab_view.set("HOME")
@@ -540,7 +546,7 @@ class App(ctk.CTk, AsyncCTk):
                         else:
                             break
                     elif event['role'] == 'member':
-                        print('Participant disconnected')
+                        logging.info('Participant disconnected')
                         if role == 'member':
                             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='You have been disconnected', sound=True, option_1="Oh Shit!")
                             await asyncio.sleep(1)
@@ -993,11 +999,7 @@ class HomeTab():
         
     def load_home_selector_dropdown(self):
         ####### Project #######
-        dbget = self.db.get_total_tasks()
-        projectvalues = []
-        for val in dbget:
-            if val['project'] not in projectvalues:
-                projectvalues.append(val['project'])
+        projectvalues = self.db.get_total_projects()
         if projectvalues == []:
             projectvalues.append("Default Project")
             
@@ -1397,17 +1399,17 @@ class EditSidepanel(Sidepanel):
                     self.removed_tasks = {}
                     c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task(s) were removed from your To-Do List!", sound=True, option_1="There we go!")
                     c.get()
-                            
-        
-                            
-        self.clear_entries(self.all_entries)
-        
+
+        list_updated_boolean = False
         for i in self.editproject_frame_listentries:
             if self.editproject_frame_listentries[i].get().strip():
+                list_updated_boolean = True
                 get = self.editproject_frame_listentries[i].get()
                 self.db.update_list_name(self.projectname, i, get)
                 self.editproject_frame_listentries[i].configure(placeholder_text=get)
                 self.projectframe.search_listframe(i).configure(label_text=f"⇲ {get}")
+        if list_updated_boolean:
+            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f"Congrats! Your List(s) were successfully renamed!", sound=True, option_1="Sounds cool!")
                 
         if renamed_project.strip():
             self.db.update_project_name(self.projectname, renamed_project)
@@ -1416,6 +1418,7 @@ class EditSidepanel(Sidepanel):
             self.editproject_frame_projectentry.configure(placeholder_text=renamed_project)
             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f"Congrats! Your Project is renamed to '{renamed_project}'", sound=True, option_1="Sounds cool!")
         
+        self.clear_entries(self.all_entries)
         self.home.progressbar.update()
         self.home.load_home_selector_dropdown()
         
@@ -1425,7 +1428,7 @@ class EditSidepanel(Sidepanel):
             try:
                 i.grid_forget()
             except:
-                print('failed to delete', i)
+                pass
         
     
 
@@ -1465,8 +1468,10 @@ class ImageButton(ctk.CTkButton):
     
 app = App()
 
-
-        
+def show_missingfiles_error():
+    c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp - Missing Files", icon="cancel", message="Uh oh. Seems like there are some files that are missing.\nPlease re-install the application or check the required files manually.", sound=True, option_1="Ah shit!")
+    c.get()
+    
 def enter(event):
     if app.mainframe.tab_view.get() == 'HOME':
         app.home.add_todo_event()
@@ -1481,4 +1486,6 @@ app.bind('<Control-a>', ctrla)
 
 app.protocol("WM_DELETE_WINDOW", app.close_confirmation)
 
-app.async_mainloop()
+if __name__=="__main__":
+    print(colorama.Fore.CYAN + ASCII)
+    app.async_mainloop()

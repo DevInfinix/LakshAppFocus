@@ -1,4 +1,17 @@
+"""
+LakshApp - Stay Focused and Motivated
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Advanced TO-DOs and Project Management integrated with Live Sessions, Music and more for Focus and Productivity
+
+Author: DevInfinix
+Copyright: (c) 2024-present DevInfinix
+License: Apache-2.0
+Version: 1.0.0
+"""
+
 import sqlite3
+import datetime
 
 class Database:
     def __init__(self, db_file):
@@ -19,6 +32,27 @@ class Database:
                                 year INTEGER
                             )''')
         self.conn.commit()
+        self.cursor.execute('''SELECT COUNT(*) FROM tasks''')
+        row_count = self.cursor.fetchone()[0]
+        if row_count == 0:
+            today = datetime.datetime.today()
+            initial_rows = [
+                ("Set up your first workspace", "My Amazing Project", "Setting up LakshApp", False, "HIGH"),
+                ("Create a new Project using + Button", "My Amazing Project", "Setting up LakshApp", False, "HIGH"),
+                ("Edit an Existing Workspace", "My Amazing Project", "Setting up LakshApp", False, "HIGH"),
+                ("View your Progress", "My Amazing Project", "Setting up LakshApp", False, "HIGH"),
+                ("Create live sessions", "My Amazing Project", "More features", False, "HIGH"),
+                ("Read motivational quotes", "My Amazing Project", "More features", False, "HIGH"),
+                ("Listen to some ambient music", "My Amazing Project", "More features", False, "HIGH"),
+                ("Ready to go! Start grinding!!!", "My Amazing Project", "More features", False, "HIGH"),
+            ]
+            values = [
+                (*row, today.day, today.month, today.year)
+                for row in initial_rows
+            ]
+            self.cursor.executemany("INSERT INTO tasks (task_name, project, list, status, priority, day, month, year)"
+                                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)", values)
+            self.conn.commit()
 
     def add_todo(self, task_name, mylist, project, status, priority, day, month, year):
         self.cursor.execute('''INSERT INTO tasks (task_name, list, project, status, priority, day, month, year)
@@ -93,5 +127,13 @@ class Database:
         self.cursor.execute('''SELECT COUNT(*) FROM tasks''')
         return self.cursor.fetchone()[0]
 
+    def get_total_projects(self):
+        dbget = self.get_total_tasks()
+        projectvalues = []
+        for val in dbget:
+            if val['project'] not in projectvalues:
+                projectvalues.append(val['project'])
+        return projectvalues
+                
     def __del__(self):
         self.conn.close()
