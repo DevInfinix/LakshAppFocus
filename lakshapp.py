@@ -13,7 +13,7 @@ Version: 1.0.0
 __version__="1.0.0"
 
 import logging
-logging.basicConfig(level=logging.DEBUG, format="[LakshApp Error] %(asctime)s - %(levelname)s - %(message)s", filename="lakshapp-logs.txt")
+logging.basicConfig(level=logging.INFO, format="[LakshApp Error] %(asctime)s - %(levelname)s - %(message)s", filename="lakshapp-logs.txt")
 
 try:
     import customtkinter as ctk
@@ -37,6 +37,7 @@ try:
     import datetime
     import asyncio
     import websockets
+    import sys
 except ImportError as e:
     logging.critical(f"Couldn't Import Modules: {e}", exc_info=True)
     print(colorama.Fore.RED + "ImportError: Check logs for more info.")
@@ -44,14 +45,20 @@ except ImportError as e:
 
 colorama.init(autoreset=True)
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    # base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+
 WEBSOCKET_SERVER='ws://infinix-v4.duckdns.org:8080'
 
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 import pygame
 
 ctk.set_appearance_mode("Dark")
-ctk.set_default_color_theme("./themes/dark-blue.json") 
-    
+ctk.set_default_color_theme(resource_path("themes/dark-blue.json")) 
+
+
 class App(ctk.CTk, AsyncCTk):
     def __init__(self):
         super().__init__()
@@ -79,7 +86,7 @@ class App(ctk.CTk, AsyncCTk):
         ############################################### DATABASE ###############################################
     
         
-        self.db = Database('./data/database.db')
+        self.db = Database(resource_path('data/database.db'))
         self.db.create_table()
         
         
@@ -103,7 +110,7 @@ class App(ctk.CTk, AsyncCTk):
         self.todo.grid_rowconfigure((0),weight=1)
 
         self.todoxyframe = ctk.CTkScrollableFrame(self.todo, fg_color="transparent")
-        self.todoxyframes.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
+        self.todoxyframe.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
         self.todoxyframe.grid_rowconfigure((0,1),weight=1)
         self.todoxyframe.grid(column=0, row=0, sticky="nsew")
         self.scrollable_checkbox_frame = None
@@ -759,7 +766,7 @@ class Sidebar(ctk.CTkFrame):
     
     
     def load_music(self):
-        self.music_switch_img = ctk.CTkImage(dark_image=Image.open("./images/Configuration/switch-off.png"))
+        self.music_switch_img = ctk.CTkImage(dark_image=Image.open(resource_path("images/Configuration/switch-off.png")))
         self.music = Music(self.master, self.music_switch_img)
         self.music_switch = ctk.CTkButton(self, text="Ambient Mode", anchor="w", image=self.music_switch_img, command=self.music.music_switch_event, fg_color="gray4", hover=False, corner_radius=20, font=UBUNTU(size=14))
         self.music_switch.grid(row=5, column=0, sticky="nsew", padx=25,pady=(8,100), columnspan=2)
@@ -853,9 +860,9 @@ class Music():
         self.music = pygame.mixer
         self.music.init()
         self.paused = False
-        self.master.trumpetsound = self.music.Sound('./sounds/trumpets.mp3')
+        self.master.trumpetsound = self.music.Sound(resource_path(resource_path('sounds/trumpets.mp3')))
         self.master.trumpetsound.set_volume(0.1)
-        self.master.levelsound = self.music.Sound('./sounds/level.mp3')
+        self.master.levelsound = self.music.Sound(resource_path(resource_path('sounds/level.mp3')))
         self.master.levelsound.set_volume(0.1)
         self.music_switch_img = music_switch_img
         
@@ -863,18 +870,18 @@ class Music():
     def music_switch_event(self):
         if not hasattr(self, "music_switch_var"):
             self.music_switch_var = True
-            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-on.png"))
+            self.music_switch_img.configure(dark_image=Image.open(resource_path("images/Configuration/switch-on.png")))
             self.play()
             return
         if self.music_switch_var:
             self.music_switch_var = False
-            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-off.png"))
+            self.music_switch_img.configure(dark_image=Image.open(resource_path("images/Configuration/switch-off.png")))
             self.paused = True
             self.music.music.pause()
             return
         if not self.music_switch_var:
             self.music_switch_var = True
-            self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-on.png"))
+            self.music_switch_img.configure(dark_image=Image.open(resource_path("images/Configuration/switch-on.png")))
             self.play()
             return
             
@@ -890,7 +897,7 @@ class Music():
                 self.music.music.play(-1, fade_ms=2000)
             else:
                 CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Select a valid format to play music (mp3/ogg/wav).", sound=True, option_1="Okay")
-                self.music_switch_img.configure(dark_image=Image.open("./images/Configuration/switch-off.png"))
+                self.music_switch_img.configure(dark_image=Image.open(resource_path("images/Configuration/switch-off.png")))
                 del self.music_switch_var
         else:
             self.music.music.unpause()
@@ -957,7 +964,7 @@ class HomeTab():
         #self.developer.grid(padx=(5,10), pady=(10,140), row=4, column=1,columnspan=1, rowspan=1, sticky="ns")
         
     def load_quotes(self):
-        with open("./data/quotes.json","r") as f:
+        with open(resource_path("data/quotes.json"),"r") as f:
             self.quotes = json.load(f)
         self.quote_no = (random.randint(0, len(self.quotes)) - 1)
         

@@ -16,6 +16,12 @@ import customtkinter as ctk
 import os
 import random
 from PIL import Image
+import sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    # base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
 
 class SplashApp(ctk.CTkToplevel):
     def __init__(self, *args, **kwargs):
@@ -56,5 +62,5 @@ class SplashApp(ctk.CTkToplevel):
         self.configure(cursor="")
         
     def get_splash(self):
-        choice = random.choice(os.listdir("././images/Splash"))
-        return ctk.CTkImage(dark_image=Image.open(f"././images/Splash/{choice}"), size=(590,760))
+        # choice = random.choice(os.listdir("././images/Splash"))
+        return ctk.CTkImage(dark_image=Image.open(resource_path('../images/Splash/lakshapp-splash-4.jpg')), size=(590,760))
