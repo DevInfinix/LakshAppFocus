@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 output/
 linux_executable/
+exe/
 
 # C extensions
 *.so
