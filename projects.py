@@ -18,7 +18,6 @@ from modules.splash import SplashApp
 
 from PIL import Image
 import pyperclip
-import pygame
 import json
 import random
 import textwrap
@@ -33,10 +32,12 @@ import websockets
 from themes.colors import *
 from themes.fonts import *
 
-
 dotenv.load_dotenv()
 WEBSOCKET_SERVER='ws://infinix-v4.duckdns.org:8080'
-environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '0'
+
+environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+import pygame
+
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("./themes/dark-blue.json") 
     
@@ -64,12 +65,7 @@ class App(ctk.CTk, AsyncCTk):
         
         
         ############################################### DATABASE ###############################################
-        
-        
-        
-        with open("./data/quotes.json","r") as f:
-            self.quotes = json.load(f)
-        self.quote_no = (random.randint(0, len(self.quotes)) - 1)
+    
         
         self.db = Database('./data/database.db')
         self.db.create_table()
@@ -81,130 +77,18 @@ class App(ctk.CTk, AsyncCTk):
         self.sidebar = Sidebar(self)
         
         
-        ############################################### MAINFRAME ###############################################
-        
-        
-        
-        self.mainframe = ctk.CTkFrame(self, corner_radius=18, fg_color="gray8")
-        self.mainframe.grid(column=1, row=0, sticky="nsew", padx=(7.5,15), pady=15,columnspan=3, rowspan=4)
-        self.mainframe.grid_columnconfigure((0,1), weight=1)
-        self.mainframe.grid_rowconfigure((0,1,2,3), weight=1)
-        
-        
-        
-        ############################################### TABVIEW ###############################################
-        
-        
-        
-        self.tab_view = ctk.CTkTabview(master=self.mainframe, corner_radius=18, fg_color="gray8")
-        self.tab_view.grid(padx=0, pady=0,  sticky="nsew",column=0, row=0, columnspan=2, rowspan=4)
-        
-        self.home = self.tab_view.add("HOME")
-        self.todo = self.tab_view.add("TO-DO")
-        self.stats = self.tab_view.add("STATS")
-        self.sessions = self.tab_view.add("SESSIONS")
-        
-        self.tab_view.set("HOME")
-        self.sidebar.hometab.configure(fg_color=THEME_BLUE)
-        
-        self.tab_view._segmented_button.grid_forget()
         
         
         
         
         
-############################################### HOMETAB ###############################################
         
+        self.mainframe = MainFrame(self)
         
-        self.home.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
-        self.home.grid_rowconfigure((0,1),weight=1)
-        
-        #self.github = CursorButton(master=self.sidebar_frame, command=self.test)
-        #self.github.grid(padx=(10,5), pady=(10,140), row=4, column=0,columnspan=1, rowspan=1, sticky="ns")
-        
-        #self.developer = CursorButton(master=self.sidebar_frame, command=self.test)
-        #self.developer.grid(padx=(5,10), pady=(10,140), row=4, column=1,columnspan=1, rowspan=1, sticky="ns")
-        
-        
-        
-       ############################################### QUOTES FRAME ###############################################
-        
-        
-        
-        self.quotes_frame = ctk.CTkFrame(master=self.home, fg_color="gray4", corner_radius=22)
-        self.quotes_frame.grid(row=0, column=0, padx=0, pady=(5,0), sticky="nsew", columnspan=8)
-        self.quotes_frame.grid_columnconfigure((0,1), weight=1)
-        self.quotes_frame.grid_rowconfigure(0, weight=1)
-        
-        
-        
-        ############################################### QUOTES ###############################################
-        
-        
-
-        self.quotes_label = ctk.CTkLabel(self.quotes_frame, text=f"“{textwrap.fill(self.quotes[self.quote_no]['text'], width=45)}”", font=HELVETICA(weight="bold"), fg_color="transparent", wraplength=780, justify="center")
-        self.quotes_label.grid(row=0, column=0, pady=(60,5), padx=20, sticky="nsew", columnspan=2)
-        self.quotes_author_label = ctk.CTkLabel(self.quotes_frame, text=f"{self.quotes[self.quote_no]['author']}", font=HELVETICA(size=20, weight="normal"), fg_color="transparent")
-        self.quotes_author_label.grid(row=1, column=0, pady=(0,0), padx=120, columnspan=8, sticky="nsew")
-        
-        self.change_quote_btn = CursorButton(self.quotes_frame, text="Refresh Quotes", image=RELOAD_IMG, command=self.change_quote_event, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
-        self.change_quote_btn.grid(row=2, column=0, pady=(40,40), padx=120, columnspan=2)
-        
-        
-        
-        ############################################### ENTRY ###############################################
-        
-        
-        
-        projectlistvalues = {"project": []}
-        dbget = self.db.get_total_tasks()
-        for val in dbget:
-            if val['project'] not in projectlistvalues["project"]:
-                projectlistvalues["project"].append(val['project'])
-        if projectlistvalues["project"] == []:
-            projectlistvalues["project"].append("Default Project")
-            
-        defaultproject = projectlistvalues["project"][0]
-        
-        self.home_projectselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=UBUNTU(), dropdown_font=UBUNTU(), dynamic_resizing=False, anchor="w")
-        self.home_projectselector.grid(row=3, column=0, pady=(20,0), padx=(30,0), sticky="ew", columnspan=2)
-        self.home_projectselector.set(defaultproject)
-        self.home_projectselector_dropdown = CTkScrollableDropdown(self.home_projectselector, values=projectlistvalues["project"], alpha=0.9, justify="left", command=self.projectselector_event)
-        
-        self.home_listselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=UBUNTU(), dropdown_font=UBUNTU(), dynamic_resizing=False, anchor="w")
-        self.home_listselector.grid(row=3, column=2, pady=(20,0), padx=(10,0), sticky="ew", columnspan=2)
-        curr = self.db.search_todo_by_project(defaultproject)
-        
-        values = []
-        for x in curr:
-            if not x['list'] in values:
-                values.append(x['list'])
-                
-        self.home_listselector.set(curr[0]['list'])
-        self.home_listselector_dropdown = CTkScrollableDropdown(self.home_listselector, values=values, alpha=0.9, justify="left")
-        
-        self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
-        self.entry_todo.grid(row=4, column=0, pady=(20,5), padx=(20,0),  sticky="ew", columnspan=7)
-        
-        ADD_IMG.configure(size=(50,50))
-        self.add_todo_button = ctk.CTkButton(self.home, text="", image=ADD_IMG, command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="transparent", width=3, hover=False)
-        self.add_todo_button.grid(row=4, column=0, pady=(20,0), padx=(10,20), columnspan=8, sticky="e")
-        self.add_todo_button.bind("<Enter>", self.hover_cursor_on)
-        self.add_todo_button.bind("<Leave>", self.hover_cursor_off)
-        
-        
-        
-        ############################################### PROGRESS ###############################################
-        
-        
-        
-        self.progressbar = ctk.CTkProgressBar(self.home, orientation="horizontal", height=15)
-        self.progressbar.set(self.percent())
-        self.progressbar.grid(row=5, column=0, pady=(10,5), padx=(45,35), sticky="ew", columnspan=8)
-        
-        self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)", font=UBUNTU(size=18, weight="normal"), justify="right")
-        self.progresslabel.grid(row=6, column=0, pady=0, padx=25, sticky="e", columnspan=8)
-        
+        self.home = self.mainframe.home
+        self.todo = self.mainframe.todo
+        self.stats = self.mainframe.stats
+        self.sessions = self.mainframe.sessions
         
 
         
@@ -367,45 +251,20 @@ class App(ctk.CTk, AsyncCTk):
             sidepanel = self.project_sidepanels[project]
             sidepanel.animate()
             
-        
     def toggle_create_sidepanel(self):
         self.create_sidepanel.animate()
         
-    def projectselector_event(self, choice):
-        db = self.db.search_todo_by_project(choice)
-        values = []
-        for x in db:
-            if not x['list'] in values:
-                values.append(x['list'])
-        self.home_listselector_dropdown.configure(values=values)
-        self.home_listselector.set(db[0]['list'])
-        self.home_projectselector.set(choice)
-        
     def select_all(self):
-        if self.tab_view.get() == 'HOME':
+        if self.mainframe.tab_view.get() == 'HOME':
             self.entry_todo.select_range(0, 'end')
             self.entry_todo.icursor('end')
             return 'break'
-        if self.tab_view.get() == 'SESSIONS':
+        if self.mainframe.tab_view.get() == 'SESSIONS':
             self.send_area.select_range(0, 'end')
             self.send_area.icursor('end')
             return 'break'
-
-    def change_quote_event(self):
-        if self.quote_no == (len(self.quotes)-1):
-            self.quote_no = 0
-        else:
-            self.quote_no += 1
-        self.quotes_label.configure(text=f"“{self.quotes[self.quote_no]['text']}”")
-        self.quotes_author_label.configure(text=f"“{self.quotes[self.quote_no]['author']}”")
         
-    def increment_progress_bar(self):
-        self.progressbar.step()
-
-    def percent(self):
-        if self.db.get_total_tasks_count() == 0:
-            return 0
-        return (self.db.get_completed_tasks_count()/self.db.get_total_tasks_count())
+    
                 
                     
     def delete_project_frame(self, frame, project):
@@ -441,6 +300,7 @@ class App(ctk.CTk, AsyncCTk):
                 self.project_main_frame_list.remove(frame)
                 c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The project has been successfully deleted!", sound=True, option_1="There we go!")
                 c.get()
+                self.home.load_home_selector_dropdown()
         
         
     def delete_list_frame(self, frame, mylist_list, projectname):
@@ -476,28 +336,9 @@ class App(ctk.CTk, AsyncCTk):
         c.get()
     
     
-    @async_handler
-    async def add_todo_event(self):
-        event = self.entry_todo.get()
-        if not event.strip():
-            return
-        today = datetime.date.today()
-        project = self.home_projectselector.get()
-        mylist = self.home_listselector.get()
-        db_return = self.db.add_todo(event, mylist, project, False, "HIGH", today.day, today.month, today.year)
-        self.progressbar.set(self.percent())
-        self.update_progresslabel()
-        
-        self.search_projectframe(project).search_listframe(mylist).create_todo(self.db.search_todo_by_id(db_return))
-    
-        CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List.\nGo to To-Do Tab to view more!", sound=True, option_1="There we go!")
-        self.entry_todo.delete(0, "end")
-        self.levelsound.play()
     
     
     
-    def update_progresslabel(self):
-        self.progresslabel.configure(text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)")
         
     
             
@@ -645,7 +486,7 @@ class App(ctk.CTk, AsyncCTk):
                     self.set_home()
                     break
             if event['type'] == 'started':
-                self.tab_view.set("SESSIONS")
+                self.mainframe.tab_view.set("SESSIONS")
                 self.sidebar.set_current_tab(self.sessionstab)
                 await asyncio.sleep(1)
                 print(f"Your code is: [{event['code']}]")
@@ -653,7 +494,7 @@ class App(ctk.CTk, AsyncCTk):
                 self.add_other_message(user='System', message=f"Your room's code is: [{event['code']}] | The code has been copied to your clipboard.")
                 self.socket = socket
             if event['type'] == 'joined':
-                self.tab_view.set("SESSIONS")
+                self.mainframe.tab_view.set("SESSIONS")
                 self.sidebar.set_current_tab(self.sessionstab)
                 await asyncio.sleep(1)
                 print(f"You joined {event['code']}")
@@ -691,7 +532,7 @@ class App(ctk.CTk, AsyncCTk):
                         print('The host has been disconnected')
                         CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='The host has been disconnected', sound=True, option_1="Oh shit!")
                         await asyncio.sleep(1)
-                        self.tab_view.set("HOME")
+                        self.mainframe.tab_view.set("HOME")
                         self.sidebar.set_current_tab(self.sidebar.hometab)
                         self.socket = None
                         if role == 'host':
@@ -703,7 +544,7 @@ class App(ctk.CTk, AsyncCTk):
                         if role == 'member':
                             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='You have been disconnected', sound=True, option_1="Oh Shit!")
                             await asyncio.sleep(1)
-                            self.tab_view.set("HOME")
+                            self.mainframe.tab_view.set("HOME")
                             self.sidebar.set_current_tab(self.sidebar.hometab)
                             return
                         else:
@@ -854,13 +695,11 @@ class ToDoFrame(ctk.CTkScrollableFrame):
             if checkbox.get() == "on" and checkbox.cget("font").cget("overstrike") == False:
                 checkbox.cget("font").configure(overstrike=True, slant="italic")
                 self.db.update_todo_status(checkbox.task_id, True)
-                self.root.progressbar.set(self.root.percent())
-                self.root.update_progresslabel()
+                self.root.mainframe.home.progressbar.update()
             elif checkbox.get() == "off" and checkbox.cget("font").cget("overstrike") == True:
                 checkbox.cget("font").configure(overstrike=False, slant="roman")
                 self.db.update_todo_status(checkbox.task_id, False)
-                self.root.progressbar.set(self.root.percent())
-                self.root.update_progresslabel()
+                self.root.mainframe.home.progressbar.update()
                 
     def wrap(self, text):
         if self.projectcolumnspan == "big":
@@ -891,7 +730,7 @@ class Sidebar(ctk.CTkFrame):
         self.grid(row=0, column=0, sticky="nsew", padx=(15,7.5),pady=15, columnspan=1)
         self.grid_columnconfigure((0,1), weight=1)
         self.grid_rowconfigure((0,1,2,3,4,5), weight=1)
-        
+
         self.load_logo()
         self.load_tabs_buttons()
         self.load_music()
@@ -935,11 +774,11 @@ class Sidebar(ctk.CTkFrame):
                 tab.configure(fg_color="gray13")
         
     def set_home(self):
-        self.master.tab_view.set("HOME")
+        self.master.mainframe.tab_view.set("HOME")
         self.set_current_tab(self.hometab)
         
     def set_todo(self):
-        self.master.tab_view.set("TO-DO")
+        self.master.mainframe.tab_view.set("TO-DO")
         self.set_current_tab(self.todotab)
         
     @async_handler
@@ -962,7 +801,7 @@ class Sidebar(ctk.CTkFrame):
                                 calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
                     )
             self.master.calendar.grid(row=1, column=0, pady=(60,60), padx=60, sticky="new", columnspan=2)
-            self.master.tab_view.set("STATS")
+            self.master.mainframe.tab_view.set("STATS")
             self.set_current_tab(self.statstab)
             
         
@@ -993,7 +832,7 @@ class Sidebar(ctk.CTkFrame):
                                     self.master.own_username = inp3
                                     await self.master.join_server(WEBSOCKET_SERVER, inp2, inp3)
         else:
-            self.master.tab_view.set("SESSIONS")
+            self.mainframe.tab_view.set("SESSIONS")
             self.set_current_tab(self.sessionstab)
             
 
@@ -1052,6 +891,208 @@ class Music():
 
 
 
+############################################### MAINFRAME ###############################################
+
+
+
+class MainFrame(ctk.CTkFrame):
+    def __init__(self, master):
+        super().__init__(master, corner_radius=18, fg_color="gray8")
+        self.master = master
+        self.grid(column=1, row=0, sticky="nsew", padx=(7.5,15), pady=15,columnspan=3, rowspan=4)
+        self.grid_columnconfigure((0,1), weight=1)
+        self.grid_rowconfigure((0,1,2,3), weight=1)
+        
+        self.load_tabview()
+        
+    
+    def load_tabview(self):
+        self.tab_view = ctk.CTkTabview(master=self, corner_radius=18, fg_color="gray8")
+        self.tab_view.grid(padx=0, pady=0,  sticky="nsew",column=0, row=0, columnspan=2, rowspan=4)
+        
+        home = self.tab_view.add("HOME")
+        self.home = HomeTab(self.master, home)
+        self.todo = self.tab_view.add("TO-DO")
+        self.stats = self.tab_view.add("STATS")
+        self.sessions = self.tab_view.add("SESSIONS")
+        
+        self.tab_view.set("HOME")
+        self.master.sidebar.hometab.configure(fg_color=THEME_BLUE)
+        
+        self.tab_view._segmented_button.grid_forget()
+        
+        
+        
+############################################### HOMETAB ###############################################
+
+
+
+class HomeTab():
+    def __init__(self, master, parent_tabview):
+        self.master = master
+        self.db = self.master.db
+        
+        self.home = parent_tabview
+        
+        self.home.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
+        self.home.grid_rowconfigure((0,1),weight=1)
+        
+        self.load_quotes()
+        self.load_quotes_frame()
+        self.load_quotes_label()
+        self.load_home_selector()
+        self.load_home_entry()
+        self.load_progressbar()
+        
+        #self.github = CursorButton(master=self.sidebar_frame, command=self.test)
+        #self.github.grid(padx=(10,5), pady=(10,140), row=4, column=0,columnspan=1, rowspan=1, sticky="ns")
+        
+        #self.developer = CursorButton(master=self.sidebar_frame, command=self.test)
+        #self.developer.grid(padx=(5,10), pady=(10,140), row=4, column=1,columnspan=1, rowspan=1, sticky="ns")
+        
+    def load_quotes(self):
+        with open("./data/quotes.json","r") as f:
+            self.quotes = json.load(f)
+        self.quote_no = (random.randint(0, len(self.quotes)) - 1)
+        
+    def change_quote_event(self):
+        if self.quote_no == (len(self.quotes)-1):
+            self.quote_no = 0
+        else:
+            self.quote_no += 1
+        self.quotes_label.configure(text=f"“{self.quotes[self.quote_no]['text']}”")
+        self.quotes_author_label.configure(text=f"“{self.quotes[self.quote_no]['author']}”")
+        
+    def load_quotes_frame(self):
+        self.quotes_frame = ctk.CTkFrame(master=self.home, fg_color="gray4", corner_radius=22)
+        self.quotes_frame.grid(row=0, column=0, padx=0, pady=(5,0), sticky="nsew", columnspan=8)
+        self.quotes_frame.grid_columnconfigure((0,1), weight=1)
+        self.quotes_frame.grid_rowconfigure(0, weight=1)
+
+
+    def load_quotes_label(self):
+        self.quotes_label = ctk.CTkLabel(self.quotes_frame, text=f"“{textwrap.fill(self.quotes[self.quote_no]['text'], width=45)}”", font=HELVETICA(weight="bold"), fg_color="transparent", wraplength=780, justify="center")
+        self.quotes_label.grid(row=0, column=0, pady=(60,5), padx=20, sticky="nsew", columnspan=2)
+        self.quotes_author_label = ctk.CTkLabel(self.quotes_frame, text=f"{self.quotes[self.quote_no]['author']}", font=HELVETICA(size=20, weight="normal"), fg_color="transparent")
+        self.quotes_author_label.grid(row=1, column=0, pady=(0,0), padx=120, columnspan=8, sticky="nsew")
+        
+        self.change_quote_btn = CursorButton(self.quotes_frame, text="Refresh Quotes", image=RELOAD_IMG, command=self.change_quote_event, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
+        self.change_quote_btn.grid(row=2, column=0, pady=(40,40), padx=120, columnspan=2)
+        
+        
+    def load_home_selector(self):
+        self.home_projectselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=UBUNTU(), dropdown_font=UBUNTU(), dynamic_resizing=False, anchor="w")
+        self.home_projectselector.grid(row=3, column=0, pady=(20,0), padx=(30,0), sticky="ew", columnspan=2)
+        self.home_projectselector_dropdown = CTkScrollableDropdown(self.home_projectselector, alpha=0.9, justify="left", command=self.projectselector_event)
+        
+        self.home_listselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=UBUNTU(), dropdown_font=UBUNTU(), dynamic_resizing=False, anchor="w")
+        self.home_listselector.grid(row=3, column=2, pady=(20,0), padx=(10,0), sticky="ew", columnspan=2)
+        self.home_listselector_dropdown = CTkScrollableDropdown(self.home_listselector, alpha=0.9, justify="left")
+        
+        self.load_home_selector_dropdown()
+        
+    def load_home_selector_dropdown(self):
+        ####### Project #######
+        dbget = self.db.get_total_tasks()
+        projectvalues = []
+        for val in dbget:
+            if val['project'] not in projectvalues:
+                projectvalues.append(val['project'])
+        if projectvalues == []:
+            projectvalues.append("Default Project")
+            
+        defaultproject = projectvalues[0]
+        
+        self.home_projectselector.set(defaultproject)
+        self.home_projectselector_dropdown.configure(values=projectvalues)
+        
+        ####### List #######
+        dbget = self.db.search_todo_by_project(defaultproject)
+        listvalues = []
+        for x in dbget:
+            if not x['list'] in listvalues:
+                listvalues.append(x['list'])
+        
+        defaultlist = listvalues[0]
+        
+        self.home_listselector.set(defaultlist)
+        self.home_listselector_dropdown.configure(values=listvalues)
+        
+        
+    def load_home_entry(self):
+        self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
+        self.entry_todo.grid(row=4, column=0, pady=(20,5), padx=(20,0),  sticky="ew", columnspan=7)
+        
+        ADD_IMG.configure(size=(50,50))
+        self.add_todo_button = ctk.CTkButton(self.home, text="", image=ADD_IMG, command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="transparent", width=3, hover=False)
+        self.add_todo_button.grid(row=4, column=0, pady=(20,0), padx=(10,20), columnspan=8, sticky="e")
+        self.add_todo_button.bind("<Enter>", self.master.hover_cursor_on)
+        self.add_todo_button.bind("<Leave>", self.master.hover_cursor_off)
+        
+
+    def load_progressbar(self):
+        self.progressbar = HomeProgressBar(self.home, self.master, self.db)
+        
+    
+    @async_handler
+    async def add_todo_event(self):
+        event = self.entry_todo.get()
+        if not event.strip():
+            return
+        today = datetime.date.today()
+        project = self.home_projectselector.get()
+        mylist = self.home_listselector.get()
+        db_return = self.db.add_todo(event, mylist, project, False, "HIGH", today.day, today.month, today.year)
+        self.progressbar.update()
+        
+        self.master.search_projectframe(project).search_listframe(mylist).create_todo(self.db.search_todo_by_id(db_return))
+    
+        CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List.\nGo to To-Do Tab to view more!", sound=True, option_1="There we go!")
+        self.entry_todo.delete(0, "end")
+        self.master.levelsound.play()
+        
+        
+    def projectselector_event(self, choice):
+        db = self.db.search_todo_by_project(choice)
+        if db != []:
+            values = []
+            for x in db:
+                if not x['list'] in values:
+                    values.append(x['list'])
+            self.home_listselector_dropdown.configure(values=values)
+            self.home_listselector.set(db[0]['list'])
+            self.home_projectselector.set(choice)
+
+
+
+class HomeProgressBar(ctk.CTkProgressBar):
+    def __init__(self, master, root, db):
+        super().__init__(master, orientation="horizontal", height=15)
+        self.master = root
+        self.db = db
+        self.home = master
+        self.set(self.percent())
+        self.grid(row=5, column=0, pady=(10,5), padx=(45,35), sticky="ew", columnspan=8)
+        
+        self.load_progress_label()
+        
+    def load_progress_label(self):
+        self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)", font=UBUNTU(size=18, weight="normal"), justify="right")
+        self.progresslabel.grid(row=6, column=0, pady=0, padx=25, sticky="e", columnspan=8)
+
+    def percent(self):
+        if self.db.get_total_tasks_count() == 0:
+            return 0
+        return (self.db.get_completed_tasks_count()/self.db.get_total_tasks_count())
+        
+    def update(self):
+        comp = self.db.get_completed_tasks_count()
+        tot = self.db.get_total_tasks_count()
+        self.set(comp/tot)
+        self.progresslabel.configure(text=f"↪ Your Progress ({comp}/{tot} completed)")
+        
+        
+        
 ############################################### SIDEPANEL ###############################################
 
 
@@ -1062,6 +1103,7 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
         
         self.master = master
         self.db = db
+        self.home = self.master.mainframe.home
         self.checkboxes = []
         
         self.grid_columnconfigure((0,1,2,3),weight=1)
@@ -1213,15 +1255,13 @@ class CreateSidepanel(Sidepanel):
             self.master.project_main_frame_list.append(project_main_frame)
             self.master.project_frame_list.append(project_frame)
 
-        self.master.projectselector_event(self.master.project_frame_list[0].projectname)
-            
         CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List!", sound=True, option_1="There we go!")
         self.clear_entries([self.createproject_frame_projectentry, self.createproject_frame_listentry, self.createproject_frame_taskentry])
         self.master.levelsound.play()
         self.animate()
 
-        self.master.progressbar.set(self.master.percent())
-        self.master.update_progresslabel()
+        self.home.progressbar.update()
+        self.home.load_home_selector_dropdown()
         if project in self.master.project_sidepanels:
             del self.master.project_sidepanels[project]
         self.master.project_sidepanels[project] = EditSidepanel(self.master, self.db, 1.04, 0.7, project)
@@ -1340,8 +1380,6 @@ class EditSidepanel(Sidepanel):
                         self.delete_items(self.components[i.listname])
                     del self.components[i.listname]
                     self.removed_lists = []
-                    self.master.projectselector_event(self.master.project_frame_list[0].projectname)
-                    
                     
         if self.removed_tasks != {}:
             dialog = ctk.CTkInputDialog(text="Type 'delete' to confirm the deletion of task(s).", title="LakshApp")
@@ -1377,6 +1415,9 @@ class EditSidepanel(Sidepanel):
             self.projectname = renamed_project
             self.editproject_frame_projectentry.configure(placeholder_text=renamed_project)
             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f"Congrats! Your Project is renamed to '{renamed_project}'", sound=True, option_1="Sounds cool!")
+        
+        self.home.progressbar.update()
+        self.home.load_home_selector_dropdown()
         
         
     def delete_items(self, items):
@@ -1427,9 +1468,9 @@ app = App()
 
         
 def enter(event):
-    if app.tab_view.get() == 'HOME':
-        app.add_todo_event()
-    if app.tab_view.get() == 'SESSIONS':
+    if app.mainframe.tab_view.get() == 'HOME':
+        app.home.add_todo_event()
+    if app.mainframe.tab_view.get() == 'SESSIONS':
         app.add_own_message()
 
 def ctrla(event):
