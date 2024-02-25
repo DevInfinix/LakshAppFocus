@@ -96,78 +96,13 @@ class App(ctk.CTk, AsyncCTk):
         
         self.sidebar = Sidebar(self)
         self.mainframe = MainFrame(self)
-        
-        self.home = self.mainframe.home
-        self.todo = self.mainframe.todo
         self.stats = self.mainframe.stats
         self.sessions = self.mainframe.sessions
-        
-        
-############################################### TO-DO TAB ###############################################
-        
 
 
-        self.todo.grid_columnconfigure((0),weight=1)
-        self.todo.grid_rowconfigure((0),weight=1)
-
-        self.todoxyframe = ctk.CTkScrollableFrame(self.todo, fg_color="transparent")
-        self.todoxyframe.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
-        self.todoxyframe.grid_rowconfigure((0,1),weight=1)
-        self.todoxyframe.grid(column=0, row=0, sticky="nsew")
-        self.scrollable_checkbox_frame = None
-        self.project_rows = 0
-        self.project_columns = 0
-        self.project_sidepanels = {}
-        
-        projects = self.db.get_total_tasks()
-        totals = []
-        for project in projects:
-            if project['project'] not in totals:
-                totals.append(project['project'])
-                
-        self.project_main_frame_list = []
-        self.project_frame_list = []
-                
-        for i, project in enumerate(totals):
-            project_main_frame = ctk.CTkFrame(self.todoxyframe, fg_color="transparent")
-            project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
-            
-            project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.toggle_edit_sidepanel(p))
-            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED, command=lambda p=project_main_frame, n=project: self.delete_project_frame(p, n))
-            
-            if self.project_columns == 8:
-                self.project_rows += 1
-                self.project_columns = 0
-                
-            if (i == len(totals) - 1) and (len(totals) % 2 != 0):
-                project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
-                
-                project_frame = ProjectFrame(self, project_main_frame, self.db, project, "big")
-                project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
-                project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
-                project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
-            else:
-                project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
-                
-                project_frame = ProjectFrame(self, project_main_frame, self.db, project, "small")
-                project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
-                project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
-                project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
-                
-            self.project_columns += 4
-            self.project_main_frame_list.append(project_main_frame)
-            self.project_frame_list.append(project_frame)
-            
-            self.project_sidepanels[project] = EditSidepanel(self, self.db, 1.04, 0.7, project)
-            self.after(500, self.project_sidepanels[project].load_editproject_frame)
-            
-        self.create_sidepanel = CreateSidepanel(self, self.db, 1.04, 0.7)
-        self.create_floating_button = CursorButton(self.todo, text="+", fg_color="gray4", width=60, font=UBUNTU(size=30), height=60, border_width=2, border_color="gray20", hover_color="gray20", corner_radius=15, command=self.toggle_create_sidepanel)
-        self.create_floating_button.place(relx=1, rely=1, anchor="se")
-        self.current_sidepanel = None
-        
 
 ############################################### STATS TAB ###############################################
+
 
 
         self.stats.grid_columnconfigure((0,1),weight=1)
@@ -256,13 +191,6 @@ class App(ctk.CTk, AsyncCTk):
     def hover_cursor_off(self, event):
         self.configure(cursor="")
     
-    def toggle_edit_sidepanel(self, project):
-        if project in self.project_sidepanels:
-            sidepanel = self.project_sidepanels[project]
-            sidepanel.animate()
-            
-    def toggle_create_sidepanel(self):
-        self.create_sidepanel.animate()
         
     def select_all(self):
         if self.mainframe.tab_view.get() == 'HOME':
@@ -275,94 +203,17 @@ class App(ctk.CTk, AsyncCTk):
             return 'break'
         
     
-                
-                    
-    def delete_project_frame(self, frame, project):
-        if len(self.db.get_total_projects()) <= 1:
-            c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="There must be at least 1 Project. Edit this project or create a new one!", sound=True, option_1="Oh shit!")
-            c.get()
-            return
-        dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Hey hey! Do you really wish to delete the project?", sound=True, option_1="Nevermind!", option_2="Delete")
-        inp = dialog.get()
-        if inp:
-            if inp.lower() == 'delete':
-                main_frame_index = self.project_main_frame_list.index(frame)
-                previous_frame = None
-                next_frame = None
-                if not main_frame_index == 0:
-                    previous_frame = self.project_main_frame_list[main_frame_index - 1]
-                if not main_frame_index == len(self.project_main_frame_list) - 1:
-                    next_frame = self.project_main_frame_list[main_frame_index + 1]
-                info = frame.grid_info()
-                frame.grid_forget()
-                if info['column'] == 0:
-                    if next_frame != None:
-                        if info['columnspan'] == 4:
-                            next_frame.grid_forget()
-                            next_frame.grid(row=info['row'], column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
-                        else:
-                            for fr in self.project_main_frame_list:
-                                frinfo = fr.grid_info()
-                                if self.project_main_frame_list.index(fr) > main_frame_index:
-                                    fr.grid_forget()
-                                    fr.grid(row=frinfo['row']-1, column=frinfo['column'], padx=10, pady=(10,0), sticky="nsew", columnspan=frinfo['columnspan'])
-                elif info['column'] == 4:
-                    if previous_frame != None:
-                        previous_frame.grid_forget()
-                        previous_frame.grid(row=info['row'], column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
-                self.db.delete_project(project)
-                self.project_main_frame_list.remove(frame)
-                c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The project has been successfully deleted!", sound=True, option_1="There we go!")
-                c.get()
-                self.home.load_home_selector_dropdown()
-        
-        
-    def delete_list_frame(self, frame, mylist_list, projectname):
-        main_frame_index = mylist_list.index(frame)
-        previous_frame = None
-        next_frame = None
-        if not main_frame_index == 0:
-            previous_frame = mylist_list[main_frame_index - 1]
-        if not main_frame_index == len(mylist_list) - 1:
-            next_frame = mylist_list[main_frame_index + 1]
-        info = frame.grid_info()
-        
-        frame.grid_forget()
-        if info['column'] == 0:
-            if next_frame != None:
-                if info['columnspan'] == 4:
-                    next_frame.grid_forget()
-                    next_frame.grid(row=info['row'], column=0, padx=10, pady=10, sticky="ew", columnspan=8)
-                else:
-                    for fr in mylist_list:
-                        frinfo = fr.grid_info()
-                        if mylist_list.index(fr) > main_frame_index:
-                            fr.grid_forget()
-                            fr.grid(row=frinfo['row']-1, column=frinfo['column'], padx=10, pady=10, sticky="ew", columnspan=frinfo['columnspan'])
-        elif info['column'] == 4:
-            if previous_frame != None:
-                previous_frame.grid_forget()
-                previous_frame.grid(row=info['row'], column=0, padx=10, pady=10, sticky="ew", columnspan=8)
-
-        self.db.delete_list(projectname, frame.listname)
-        mylist_list.remove(frame)
-        c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The List has been successfully deleted!", sound=True, option_1="There we go!")
-        c.get()
+    def toggle_edit_sidepanel(self, project):
+        if project in self.todo.project_sidepanels:
+            sidepanel = self.todo.project_sidepanels[project]
+            sidepanel.animate()
     
-    
-    
-    
-    
-        
-    
-            
             
     @async_handler
     async def leavesession(self):
         d = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Done for the day? Hope to see you soon!\n[Attention: Ending the session will result in the loss of all your progress during the session.]", sound=True, option_1="I'm done", option_2="I'm staying")
         if d.get() == "I'm done":
             await self.close_socket()
-
     
     
     @async_handler
@@ -409,15 +260,6 @@ class App(ctk.CTk, AsyncCTk):
         self.total_message += 1
         
         self.sessions_frame.after(10, self.sessions_frame._parent_canvas.yview_moveto, 1.0)
-    
-    
-    async def close_socket(self):
-        try:
-            await self.socket.close()
-        except:
-            pass
-        self.socket = None
-        self.set_home()
         
     
     @async_handler
@@ -580,12 +422,16 @@ class App(ctk.CTk, AsyncCTk):
             self.sessions_progressbar.set(cur/time)
             cur += 1
             await asyncio.sleep(1)
-            
-    def search_projectframe(self, project):
-        for x in self.project_frame_list:
-            if x.projectname == project:
-                return x
-        return False
+    
+    
+    async def close_socket(self):
+        try:
+            await self.socket.close()
+        except:
+            pass
+        self.socket = None
+        self.set_home()
+        
         
     def convert_time(self, time):
         time = time.lower()
@@ -593,7 +439,6 @@ class App(ctk.CTk, AsyncCTk):
             return int(int(time.split(' ')[0])*60)
         if 'hour' in time:
             return int(int(time.split(' ')[0])*3600)
-    
     
     
     @async_handler
@@ -611,7 +456,7 @@ class App(ctk.CTk, AsyncCTk):
         
         
 
-############################################### TO-DO FRAME ###############################################
+############################################### PROJECT FRAME ###############################################
 
 
 
@@ -709,11 +554,11 @@ class ToDoFrame(ctk.CTkScrollableFrame):
             if checkbox.get() == "on" and checkbox.cget("font").cget("overstrike") == False:
                 checkbox.cget("font").configure(overstrike=True, slant="italic")
                 self.db.update_todo_status(checkbox.task_id, True)
-                self.root.mainframe.home.progressbar.update()
+                self.root.home.progressbar.update()
             elif checkbox.get() == "off" and checkbox.cget("font").cget("overstrike") == True:
                 checkbox.cget("font").configure(overstrike=False, slant="roman")
                 self.db.update_todo_status(checkbox.task_id, False)
-                self.root.mainframe.home.progressbar.update()
+                self.root.home.progressbar.update()
                 
     def wrap(self, text):
         if self.projectcolumnspan == "big":
@@ -772,15 +617,20 @@ class Sidebar(ctk.CTkFrame):
         self.music_switch = ctk.CTkButton(self, text="Ambient Mode", anchor="w", image=self.music_switch_img, command=self.music.music_switch_event, fg_color="gray4", hover=False, corner_radius=20, font=UBUNTU(size=14))
         self.music_switch.grid(row=5, column=0, sticky="nsew", padx=25,pady=(8,100), columnspan=2)
         
-        self.music_switch.bind("<Enter>", self.master.hover_cursor_on)
-        self.music_switch.bind("<Leave>", self.master.hover_cursor_off)
+        self.music_switch.bind("<Enter>", self.hover_cursor_on)
+        self.music_switch.bind("<Leave>", self.hover_cursor_off)
 
+    def hover_cursor_on(self, event):
+        self.configure(cursor="hand2")
+
+    def hover_cursor_off(self, event):
+        self.configure(cursor="")
 
     def set_current_tab(self, current_tab):
-        if hasattr(self.master, "current_sidepanel"):
-            if self.master.current_sidepanel:
-                if (not self.master.current_sidepanel.is_closed):
-                    self.master.current_sidepanel.animate_backwards()
+        if hasattr(self.master.todo, "current_sidepanel"):
+            if self.master.todo.current_sidepanel:
+                if (not self.master.todo.current_sidepanel.is_closed):
+                    self.master.todo.current_sidepanel.animate_backwards()
         for tab in self.tabsbutton:
             if current_tab == tab:
                 tab.configure(fg_color=THEME_BLUE)
@@ -925,8 +775,9 @@ class MainFrame(ctk.CTkFrame):
         self.tab_view.grid(padx=0, pady=0,  sticky="nsew",column=0, row=0, columnspan=2, rowspan=4)
         
         home = self.tab_view.add("HOME")
-        self.home = HomeTab(self.master, home)
-        self.todo = self.tab_view.add("TO-DO")
+        self.master.home = HomeTab(self.master, home)
+        todo = self.tab_view.add("TO-DO")
+        self.master.todo = ToDoTab(self.master, todo)
         self.stats = self.tab_view.add("STATS")
         self.sessions = self.tab_view.add("SESSIONS")
         
@@ -1036,13 +887,18 @@ class HomeTab():
         ADD_IMG.configure(size=(50,50))
         self.add_todo_button = ctk.CTkButton(self.home, text="", image=ADD_IMG, command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="transparent", width=3, hover=False)
         self.add_todo_button.grid(row=4, column=0, pady=(20,0), padx=(10,20), columnspan=8, sticky="e")
-        self.add_todo_button.bind("<Enter>", self.master.hover_cursor_on)
-        self.add_todo_button.bind("<Leave>", self.master.hover_cursor_off)
+        self.add_todo_button.bind("<Enter>", self.hover_cursor_on)
+        self.add_todo_button.bind("<Leave>", self.hover_cursor_off)
         
 
     def load_progressbar(self):
         self.progressbar = HomeProgressBar(self.home, self.master, self.db)
-        
+    
+    def hover_cursor_on(self, event):
+        self.configure(cursor="hand2")
+
+    def hover_cursor_off(self, event):
+        self.configure(cursor="")
     
     @async_handler
     async def add_todo_event(self):
@@ -1055,8 +911,9 @@ class HomeTab():
         db_return = self.db.add_todo(event, mylist, project, False, "HIGH", today.day, today.month, today.year)
         self.progressbar.update()
         
-        self.master.search_projectframe(project).search_listframe(mylist).create_todo(self.db.search_todo_by_id(db_return))
-    
+        self.master.todo.search_projectframe(project).search_listframe(mylist).create_todo(self.db.search_todo_by_id(db_return))
+        self.master.todo.project_sidepanels[project] = EditSidepanel(self.master, self.master.todo, self.db, 1.04, 0.7, project)
+            
         CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List.\nGo to To-Do Tab to view more!", sound=True, option_1="There we go!")
         self.entry_todo.delete(0, "end")
         self.master.levelsound.play()
@@ -1072,7 +929,7 @@ class HomeTab():
             self.home_listselector_dropdown.configure(values=values)
             self.home_listselector.set(db[0]['list'])
             self.home_projectselector.set(choice)
-
+    
 
 
 class HomeProgressBar(ctk.CTkProgressBar):
@@ -1103,17 +960,177 @@ class HomeProgressBar(ctk.CTkProgressBar):
         
         
         
+############################################### TO-DOTAB ###############################################
+
+
+
+class ToDoTab():
+    def __init__(self, master, parent_tabview):
+        self.master = master
+        self.db = self.master.db
+        
+        self.todo = parent_tabview
+        
+        self.todo.grid_columnconfigure((0),weight=1)
+        self.todo.grid_rowconfigure((0),weight=1)
+
+        self.todoxyframe = ctk.CTkScrollableFrame(self.todo, fg_color="transparent")
+        self.todoxyframe.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
+        self.todoxyframe.grid_rowconfigure((0,1),weight=1)
+        self.todoxyframe.grid(column=0, row=0, sticky="nsew")
+        self.scrollable_checkbox_frame = None
+        self.project_rows = 0
+        self.project_columns = 0
+        self.project_sidepanels = {}
+        self.project_main_frame_list = []
+        self.project_frame_list = []
+        
+        self.load_project_frames()
+        self.load_sidepanels()
+        
+        
+    def get_projects(self):
+        projects = self.db.get_total_tasks()
+        totals = []
+        for project in projects:
+            if project['project'] not in totals:
+                totals.append(project['project'])
+        return totals
+        
+    def search_projectframe(self, project):
+        for x in self.project_frame_list:
+            if x.projectname == project:
+                return x
+        return False
+                
+    def load_project_frames(self):
+        totals = self.get_projects()
+        for i, project in enumerate(totals):
+            project_main_frame = ctk.CTkFrame(self.todoxyframe, fg_color="transparent")
+            project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
+            
+            project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.master.toggle_edit_sidepanel(p))
+            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED, command=lambda p=project_main_frame, n=project: self.delete_project_frame(p, n))
+            
+            if self.project_columns == 8:
+                self.project_rows += 1
+                self.project_columns = 0
+                
+            if (i == len(totals) - 1) and (len(totals) % 2 != 0):
+                project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
+                
+                project_frame = ProjectFrame(self.master, project_main_frame, self.db, project, "big")
+                project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
+                project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
+                project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
+            else:
+                project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
+                
+                project_frame = ProjectFrame(self.master, project_main_frame, self.db, project, "small")
+                project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
+                project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
+                project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
+                
+            self.project_columns += 4
+            self.project_main_frame_list.append(project_main_frame)
+            self.project_frame_list.append(project_frame)
+            
+            self.project_sidepanels[project] = EditSidepanel(self.master, self, self.db, 1.04, 0.7, project)
+            self.master.after(500, self.project_sidepanels[project].load_editproject_frame)
+            
+            
+    def load_sidepanels(self):
+        create_sidepanel = CreateSidepanel(self.master, self, self.db, 1.04, 0.7)
+        create_floating_button = CursorButton(self.todo, text="+", fg_color="gray4", width=60, font=UBUNTU(size=30), height=60, border_width=2, border_color="gray20", hover_color="gray20", corner_radius=15, command=create_sidepanel.animate)
+        create_floating_button.place(relx=1, rely=1, anchor="se")
+        self.current_sidepanel = None
+        
+        
+    def delete_project_frame(self, frame, project):
+        if len(self.db.get_total_projects()) <= 1:
+            c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="There must be at least 1 Project. Edit this project or create a new one!", sound=True, option_1="Oh shit!")
+            c.get()
+            return
+        dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Hey hey! Do you really wish to delete the project?", sound=True, option_1="Nevermind!", option_2="Delete")
+        inp = dialog.get()
+        if inp:
+            if inp.lower() == 'delete':
+                main_frame_index = self.project_main_frame_list.index(frame)
+                previous_frame = None
+                next_frame = None
+                if not main_frame_index == 0:
+                    previous_frame = self.project_main_frame_list[main_frame_index - 1]
+                if not main_frame_index == len(self.project_main_frame_list) - 1:
+                    next_frame = self.project_main_frame_list[main_frame_index + 1]
+                info = frame.grid_info()
+                frame.grid_forget()
+                if info['column'] == 0:
+                    if next_frame != None:
+                        if info['columnspan'] == 4:
+                            next_frame.grid_forget()
+                            next_frame.grid(row=info['row'], column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
+                        else:
+                            for fr in self.project_main_frame_list:
+                                frinfo = fr.grid_info()
+                                if self.project_main_frame_list.index(fr) > main_frame_index:
+                                    fr.grid_forget()
+                                    fr.grid(row=frinfo['row']-1, column=frinfo['column'], padx=10, pady=(10,0), sticky="nsew", columnspan=frinfo['columnspan'])
+                elif info['column'] == 4:
+                    if previous_frame != None:
+                        previous_frame.grid_forget()
+                        previous_frame.grid(row=info['row'], column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
+                self.db.delete_project(project)
+                self.project_main_frame_list.remove(frame)
+                c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The project has been successfully deleted!", sound=True, option_1="There we go!")
+                c.get()
+                self.master.home.load_home_selector_dropdown()
+        
+        
+    def delete_list_frame(self, frame, mylist_list, projectname):
+        main_frame_index = mylist_list.index(frame)
+        previous_frame = None
+        next_frame = None
+        if not main_frame_index == 0:
+            previous_frame = mylist_list[main_frame_index - 1]
+        if not main_frame_index == len(mylist_list) - 1:
+            next_frame = mylist_list[main_frame_index + 1]
+        info = frame.grid_info()
+        
+        frame.grid_forget()
+        if info['column'] == 0:
+            if next_frame != None:
+                if info['columnspan'] == 4:
+                    next_frame.grid_forget()
+                    next_frame.grid(row=info['row'], column=0, padx=10, pady=10, sticky="ew", columnspan=8)
+                else:
+                    for fr in mylist_list:
+                        frinfo = fr.grid_info()
+                        if mylist_list.index(fr) > main_frame_index:
+                            fr.grid_forget()
+                            fr.grid(row=frinfo['row']-1, column=frinfo['column'], padx=10, pady=10, sticky="ew", columnspan=frinfo['columnspan'])
+        elif info['column'] == 4:
+            if previous_frame != None:
+                previous_frame.grid_forget()
+                previous_frame.grid(row=info['row'], column=0, padx=10, pady=10, sticky="ew", columnspan=8)
+
+        self.db.delete_list(projectname, frame.listname)
+        mylist_list.remove(frame)
+        c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The List has been successfully deleted!", sound=True, option_1="There we go!")
+        c.get()
+        
+        
+        
 ############################################### SIDEPANEL ###############################################
 
 
 
 class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
-    def __init__(self, master, db, start_pos, end_pos, label):
+    def __init__(self, master, todotab, db, start_pos, end_pos, label):
         super().__init__(master, label_text=label, label_fg_color=DULL_BLUE, border_width=2, border_color=WHITE, corner_radius=8, fg_color="black", label_font=UBUNTU(size=18))
         
         self.master = master
+        self.todo = todotab
         self.db = db
-        self.home = self.master.mainframe.home
         self.checkboxes = []
         
         self.grid_columnconfigure((0,1,2,3),weight=1)
@@ -1125,8 +1142,6 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
         self.is_closed = True
         self.place(relx = self.start_pos, rely = 0.05, relwidth = self.width, relheight = 0.95)
 
-        
-
     def animate(self):
         if self.is_closed:
             self.animate_forward()
@@ -1135,9 +1150,9 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
             
 
     def animate_forward(self):
-        if self.master.current_sidepanel:
-            if (not self.master.current_sidepanel.is_closed):
-                self.master.current_sidepanel.animate_backwards()
+        if self.master.todo.current_sidepanel:
+            if (not self.master.todo.current_sidepanel.is_closed):
+                self.master.todo.current_sidepanel.animate_backwards()
                 return
         if self.pos > self.end_pos:
             self.pos -= 0.03
@@ -1145,7 +1160,7 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
             self.after(5, self.animate_forward)
         else:
             self.is_closed = False
-            self.master.current_sidepanel = self
+            self.master.todo.current_sidepanel = self
 
     def animate_backwards(self):
         if self.pos < self.start_pos:
@@ -1154,7 +1169,7 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
             self.after(5, self.animate_backwards)
         else:
             self.is_closed = True
-            self.master.current_sidepanel = None
+            self.master.todo.current_sidepanel = None
     
     
     def load_buttons(self, checkcommand, pady, place="down"):
@@ -1174,11 +1189,12 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
             
         
 class CreateSidepanel(Sidepanel):
-    def __init__(self, master, db, start_pos, end_pos):
-        super().__init__(master, db, start_pos, end_pos, "CREATE A NEW WORKSPACE")
+    def __init__(self, master, todo, db, start_pos, end_pos):
+        super().__init__(master, todo, db, start_pos, end_pos, "CREATE A NEW WORKSPACE")
 
         self.master = master
         self.db = db
+        self.todo = todo
 
         self.load_createproject_frame()
         self.load_buttons(self.create_project_event, 50)
@@ -1215,7 +1231,7 @@ class CreateSidepanel(Sidepanel):
         today = datetime.date.today()
         db_return = self.db.add_todo(task, mylist, project, False, "HIGH", today.day, today.month, today.year)
         
-        existing_projectframe = self.master.search_projectframe(project)
+        existing_projectframe = self.todo.search_projectframe(project)
         if existing_projectframe:
             existing_listframe = existing_projectframe.search_listframe(mylist)
             if existing_listframe:
@@ -1235,60 +1251,61 @@ class CreateSidepanel(Sidepanel):
                 existing_projectframe.columns += 4
                 existing_projectframe.mylist_list.append(todo_frame)
         else:
-            last_project_main_frame = self.master.project_main_frame_list[-1]
-            project_main_frame = ctk.CTkFrame(self.master.todoxyframe, fg_color="transparent")
+            last_project_main_frame = self.todo.project_main_frame_list[-1]
+            project_main_frame = ctk.CTkFrame(self.master.todo.todoxyframe, fg_color="transparent")
             project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
             project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.master.toggle_edit_sidepanel(p))
-            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED, command=lambda p=project_main_frame, n=project: self.master.delete_project_frame(p, n))
+            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED, command=lambda p=project_main_frame, n=project: self.todo.delete_project_frame(p, n))
             
-            if self.master.project_columns == 8:
-                self.master.project_rows += 1
-                self.master.project_columns = 0
+            if self.master.todo.project_columns == 8:
+                self.master.todo.project_rows += 1
+                self.master.todo.project_columns = 0
                     
-            if self.master.project_frame_list[-1].columnspan == "big":
+            if self.master.todo.project_frame_list[-1].columnspan == "big":
                 last_project_main_frame.grid_forget()
-                last_project_main_frame.grid(row=self.master.project_rows, column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
-                project_main_frame.grid(row=self.master.project_rows, column=4, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
+                last_project_main_frame.grid(row=self.master.todo.project_rows, column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
+                project_main_frame.grid(row=self.master.todo.project_rows, column=4, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
                 
                 project_frame = ProjectFrame(self, project_main_frame, self.db, project, "small")
                 project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
                 project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
             else:
-                project_main_frame.grid(row=self.master.project_rows, column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
+                project_main_frame.grid(row=self.master.todo.project_rows, column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
                 project_frame = ProjectFrame(self, project_main_frame, self.db, project, "big")
-            self.master.project_columns += 4
+            self.master.todo.project_columns += 4
                 
             project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
             project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
             
             project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
-            self.master.project_main_frame_list.append(project_main_frame)
-            self.master.project_frame_list.append(project_frame)
+            self.todo.project_main_frame_list.append(project_main_frame)
+            self.master.todo.project_frame_list.append(project_frame)
 
         CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List!", sound=True, option_1="There we go!")
         self.clear_entries([self.createproject_frame_projectentry, self.createproject_frame_listentry, self.createproject_frame_taskentry])
         self.master.levelsound.play()
         self.animate()
 
-        self.home.progressbar.update()
-        self.home.load_home_selector_dropdown()
-        if project in self.master.project_sidepanels:
-            del self.master.project_sidepanels[project]
-        self.master.project_sidepanels[project] = EditSidepanel(self.master, self.db, 1.04, 0.7, project)
-        self.master.after(500, self.master.project_sidepanels[project].load_editproject_frame)
+        self.master.home.progressbar.update()
+        self.master.home.load_home_selector_dropdown()
+        if project in self.todo.project_sidepanels:
+            del self.todo.project_sidepanels[project]
+        self.todo.project_sidepanels[project] = EditSidepanel(self.master, self.todo, self.db, 1.04, 0.7, project)
+        self.master.after(500, self.todo.project_sidepanels[project].load_editproject_frame)
         
         
         
 class EditSidepanel(Sidepanel):
-    def __init__(self, master, db, start_pos, end_pos, projectname):
-        super().__init__(master, db, start_pos, end_pos, f"EDIT {projectname.upper()}")
+    def __init__(self, master, todo, db, start_pos, end_pos, projectname):
+        super().__init__(master, todo, db, start_pos, end_pos, f"EDIT {projectname.upper()}")
         
         self.master = master
+        self.todo = todo
         self.projectname = projectname
         self.removed_tasks = {}
         self.removed_lists = []
         self.editproject_frame_listentries = {}
-        self.projectframe = self.master.search_projectframe(self.projectname)
+        self.projectframe = self.todo.search_projectframe(self.projectname)
         self.all_entries = []
         self.permanently_removed = []
         self.components = {}
@@ -1385,7 +1402,7 @@ class EditSidepanel(Sidepanel):
             if inp:
                 if inp.lower() == 'delete':
                     for i in self.removed_lists:
-                        self.master.delete_list_frame(i, self.projectframe.mylist_list, self.projectname)
+                        self.todo.delete_list_frame(i, self.projectframe.mylist_list, self.projectname)
                         self.permanently_removed.append(i)
                         self.delete_items(self.components[i.listname])
                     del self.components[i.listname]
@@ -1427,8 +1444,8 @@ class EditSidepanel(Sidepanel):
             CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f"Congrats! Your Project is renamed to '{renamed_project}'", sound=True, option_1="Sounds cool!")
         
         self.clear_entries(self.all_entries)
-        self.home.progressbar.update()
-        self.home.load_home_selector_dropdown()
+        self.master.home.progressbar.update()
+        self.master.home.load_home_selector_dropdown()
         
         
     def delete_items(self, items):
