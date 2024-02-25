@@ -12,10 +12,19 @@ Version: 1.0.0
 
 import sqlite3
 import datetime
+from . import AppData
+import logging
 
 class Database:
     def __init__(self, db_file):
-        self.conn = sqlite3.connect(db_file)
+        try:
+            app_data = AppData("lakshapp", db_file)
+            self.database_path = app_data.get_file_path()
+            self.conn = sqlite3.connect(self.database_path)
+            logging.info(f"Connected to database: {self.database_path}")
+        except:
+            logging.critical(f"Couldn't connect to database. Please check file permissions.")
+            exit(1)
         self.conn.row_factory = sqlite3.Row  # Use Row factory to fetch rows as dictionaries
         self.cursor = self.conn.cursor()
 

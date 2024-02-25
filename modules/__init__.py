@@ -12,6 +12,7 @@ Version: 1.0.0
 
 __version__="1.0.0"
 
+from .configs import *
 from .database_handler import *
 from .splash import *
 from .CTkDataVisualizingWidgets import * #https://github.com/ZikPin/CTkDataVisualizingWidgets

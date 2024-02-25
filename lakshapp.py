@@ -13,7 +13,9 @@ Version: 1.0.0
 __version__="1.0.0"
 
 import logging
-logging.basicConfig(level=logging.INFO, format="[LakshApp Error] %(asctime)s - %(levelname)s - %(message)s", filename="lakshapp-logs.txt")
+from modules import AppData
+logfile = AppData("lakshapp", "lakshapp-logs.txt")
+logging.basicConfig(level=logging.INFO, format="[LakshApp Logs] %(asctime)s - %(levelname)s - %(message)s", filename=logfile.get_file_path())
 
 try:
     import customtkinter as ctk
@@ -37,7 +39,6 @@ try:
     import datetime
     import asyncio
     import websockets
-    import sys
 except ImportError as e:
     logging.critical(f"Couldn't Import Modules: {e}", exc_info=True)
     print(colorama.Fore.RED + "ImportError: Check logs for more info.")
@@ -86,7 +87,7 @@ class App(ctk.CTk, AsyncCTk):
         ############################################### DATABASE ###############################################
     
         
-        self.db = Database(resource_path('data/database.db'))
+        self.db = Database('database.db')
         self.db.create_table()
         
         
