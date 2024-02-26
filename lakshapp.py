@@ -96,7 +96,6 @@ class App(ctk.CTk, AsyncCTk):
         
         self.sidebar = Sidebar(self)
         self.mainframe = MainFrame(self)
-        self.stats = self.mainframe.stats
         self.sessions = self.mainframe.sessions
 
 
@@ -105,28 +104,7 @@ class App(ctk.CTk, AsyncCTk):
 
 
 
-        self.stats.grid_columnconfigure((0,1),weight=1)
-        self.stats.grid_rowconfigure(1,weight=1)
         
-        
-        self.stats_label = ctk.CTkLabel(self.stats, text=f"HERE's WHAT I ACHIEVED!", font=UBUNTU(size=30), fg_color="transparent", wraplength=780, justify="center")
-        self.stats_label.grid(row=0, column=0, pady=(20,5), padx=60, sticky="new", columnspan=2)
-        dates = self.db.get_total_tasks()
-        if dates == []:
-            values = {}
-        else:
-            values = {}
-            for val in dates:
-                date_tuple = (val['day'], val['month'], val['year'])
-                if date_tuple not in values:
-                    values[date_tuple] = 10
-            self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color=WHITE,
-                                fg_color=NAVY_BLUE_DARK, title_bar_border_width=2, title_bar_border_color="gray80",
-                                title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
-                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color=WHITE,
-                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
-                    )
-            self.calendar.grid(row=1, column=0, pady=(60,60), padx=60, sticky="new", columnspan=2)
 
         
         
@@ -648,25 +626,22 @@ class Sidebar(ctk.CTkFrame):
     @async_handler
     async def set_stats(self):
         dates = self.db.get_total_tasks()
-        if dates == []:
-            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="You haven't completed any tasks yet.\nStart completing now!", sound=True, option_1="Oh shit!")
-        else:
-            values = {}
-            for val in dates:
-                date_tuple = (val['day'], val['month'], val['year'])
-                if date_tuple not in values:
-                    values[date_tuple] = 10
-            if hasattr(self.master, "calendar"):
-                self.master.calendar.destroy()
-            self.master.calendar = CTkCalendarStat(self.master.stats, values, border_width=0, border_color=WHITE,
-                                fg_color=NAVY_BLUE, title_bar_border_width=2, title_bar_border_color="gray80",
-                                title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
-                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color=WHITE,
-                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
-                    )
-            self.master.calendar.grid(row=1, column=0, pady=(60,60), padx=60, sticky="new", columnspan=2)
-            self.master.mainframe.tab_view.set("STATS")
-            self.set_current_tab(self.statstab)
+        values = {}
+        for val in dates:
+            date_tuple = (val['day'], val['month'], val['year'])
+            if date_tuple not in values:
+                values[date_tuple] = 10
+        if hasattr(self.master.stats, "calendar"):
+            self.master.stats.calendar.destroy()
+        self.master.stats.calendar = CTkCalendarStat(self.master.stats.stats, values, border_width=0, border_color=WHITE,
+                            fg_color=NAVY_BLUE, title_bar_border_width=2, title_bar_border_color="gray80",
+                            title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
+                            title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color=WHITE,
+                            calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
+                )
+        self.master.stats.calendar.grid(row=1, column=0, pady=(20,5), padx=5, sticky="nsew", columnspan=2, rowspan=3)
+        self.master.mainframe.tab_view.set("STATS")
+        self.set_current_tab(self.statstab)
             
         
     @async_handler
@@ -778,7 +753,8 @@ class MainFrame(ctk.CTkFrame):
         self.master.home = HomeTab(self.master, home)
         todo = self.tab_view.add("TO-DO")
         self.master.todo = ToDoTab(self.master, todo)
-        self.stats = self.tab_view.add("STATS")
+        stats = self.tab_view.add("STATS")
+        self.master.stats = StatsTab(self.master, stats)
         self.sessions = self.tab_view.add("SESSIONS")
         
         self.tab_view.set("HOME")
@@ -1117,6 +1093,82 @@ class ToDoTab():
         mylist_list.remove(frame)
         c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The List has been successfully deleted!", sound=True, option_1="There we go!")
         c.get()
+        
+        
+        
+############################################### STATSTAB ###############################################
+
+
+
+class StatsTab():
+    def __init__(self, master, parent_tabview):
+        self.master = master
+        self.db = self.master.db
+        
+        self.stats = parent_tabview
+        
+        self.stats.grid_columnconfigure((0,1,2,3),weight=1)
+        self.stats.grid_rowconfigure((0,1,2,3),weight=1)
+        self.load_progressbar()
+        self.load_calendar()
+        
+    
+    def load_calendar(self):
+        self.stats_label = ctk.CTkLabel(self.stats, text=f"HERE's WHAT I ACHIEVED!", font=UBUNTU(size=30), fg_color="transparent", wraplength=780, justify="center")
+        self.stats_label.grid(row=0, column=0, pady=(20,5), padx=60, sticky="new", columnspan=4)
+        dates = self.db.get_total_tasks()
+        if dates == []:
+            values = {}
+        else:
+            values = {}
+            for val in dates:
+                date_tuple = (val['day'], val['month'], val['year'])
+                if date_tuple not in values:
+                    values[date_tuple] = 10
+            self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color=WHITE,
+                                fg_color=NAVY_BLUE_DARK, title_bar_border_width=2, title_bar_border_color="gray80",
+                                title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
+                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color=WHITE,
+                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
+                    )
+            self.calendar.grid(row=1, column=0, pady=(20,5), padx=5, sticky="nsew", columnspan=2, rowspan=3)
+            
+    def load_progressbar(self):
+        from modules import CTkMeter
+        meterframe = ctk.CTkFrame(self.stats, fg_color=NAVY_BLUE, corner_radius=30)
+        meterframe.grid_columnconfigure((0,1,2,3), weight=1)
+        # meterframe.grid_propagate(False)
+        meterframe.grid(row=1, column=2, pady=(20,5), padx=5, columnspan=2, sticky="nsew")
+        meter = CTkMeter(meterframe, refresh_animation=True, hover_effect=True, padding=5, background=NAVY_BLUE,
+                foreground=WHITE, troughcolor='#b6b6de', font='Ubuntu 14 bold',
+                indicatorcolor=THEME_BLUE, command=lambda: print('ok'))
+        meter.grid(row=0, column=0, pady=5, sticky="nsew", columnspan=1)
+        meter.set(160)  # Value must be between 0 and 360
+        meter.textvariable.set(f'{int((meter.arcvariable.get() / 360) * 100)}%',)
+        
+        ctk.CTkLabel(meterframe, text="Total Tasks", font=UBUNTU(20)).grid(row=0, column=1, columnspan=2, sticky="nsew")
+        
+        meterframe2 = ctk.CTkFrame(self.stats, fg_color=NAVY_BLUE, corner_radius=30)
+        # meterframe.grid_propagate(False)
+        meterframe2.grid(row=2, column=2, pady=(5,5), padx=5, columnspan=2, sticky="nsew")
+        meter2 = CTkMeter(meterframe2, refresh_animation=True, hover_effect=True, padding=5, background=NAVY_BLUE,
+                foreground=WHITE, troughcolor='#b6b6de', font='Ubuntu 14 bold',
+                indicatorcolor=THEME_BLUE, command=lambda: print('ok'))
+        meter2.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
+        meter2.set(214)  # Value must be between 0 and 360
+
+        meter2.textvariable.set(f'{int((meter2.arcvariable.get() / 360) * 100)}%') 
+        
+        meterframe3 = ctk.CTkFrame(self.stats, fg_color=NAVY_BLUE, corner_radius=30)
+        # meterframe.grid_propagate(False)
+        meterframe3.grid(row=3, column=2, pady=(5,5), padx=5, columnspan=2, sticky="nsew")
+        meter3 = CTkMeter(meterframe3, refresh_animation=True, hover_effect=True, padding=5, background=NAVY_BLUE,
+                foreground=WHITE, troughcolor='#b6b6de', font='Ubuntu 14 bold',
+                indicatorcolor=THEME_BLUE, command=lambda: print('ok'))
+        meter3.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
+        meter3.set(90)  # Value must be between 0 and 360
+
+        meter3.textvariable.set(f'{int((meter3.arcvariable.get() / 360) * 100)}%') 
         
         
         

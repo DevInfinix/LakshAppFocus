@@ -17,3 +17,4 @@ from .database_handler import *
 from .splash import *
 from .CTkDataVisualizingWidgets import * #https://github.com/ZikPin/CTkDataVisualizingWidgets
 from .CTkScrollableDropdown import *
+from .ctk_meter import *

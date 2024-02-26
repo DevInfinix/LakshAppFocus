@@ -32,7 +32,7 @@ class CTkMeter(ttk.Label):
         self.im = Image.new('RGBA', (1000, 1000))
         self.min_value = kwargs.get('minvalue') or 0
         self.max_value = kwargs.get('maxvalue') or 100
-        self.size = kwargs.get('size') or 200
+        self.size = kwargs.get('size') or 100
         self.font = kwargs.get('font') or 'Calibri 14 bold'
         self.background = kwargs.get('background')
         self.foreground = kwargs.get('foreground') or '#777'
