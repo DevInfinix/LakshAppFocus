@@ -7,7 +7,7 @@ Advanced TO-DOs and Project Management integrated with Live Sessions, Music and 
 Author: DevInfinix
 Copyright: (c) 2024-present DevInfinix
 License: Apache-2.0
-Version: 1.0.0
+Version: 1.0.1
 """
 
 import os
