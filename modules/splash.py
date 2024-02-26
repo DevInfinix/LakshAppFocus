@@ -14,7 +14,6 @@ __version__ = "1.0.1"
 
 import customtkinter as ctk
 import os
-import random
 from PIL import Image
 import sys
 

@@ -169,37 +169,39 @@ class Sidebar(ctk.CTkFrame):
         self.load_tabs_buttons()
         self.load_music()
         
-        self.tabsbutton = [self.hometab, self.todotab, self.statstab, self.sessionstab]
+        self.tabsbutton = [self.hometab, self.todotab, self.statstab, self.sessionstab, self.pomodorotab]
         
     def load_logo(self):
-        self.logo_label = ctk.CTkLabel(self, text="LakshApp", font=UBUNTU(size=28), text_color=LIGHT_BLUE, justify="center")
-        self.logo_label.grid(row=0, column=0, padx=25, pady=(100,60),columnspan=2, rowspan=1, sticky="ew")
+        self.logo_label = ctk.CTkLabel(self, text="LakshApp", font=LOBSTERTWO(size=34), text_color=LIGHT_BLUE, justify="center")
+        self.logo_label.grid(row=0, column=0, padx=25, pady=(80,70),columnspan=2, rowspan=1, sticky="nsew")
     
-    def load_tabs_buttons(self):   
-        self.hometab = CursorButton(master=self, text=" Home ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_home, font=UBUNTU())
+    def load_tabs_buttons(self):
+        self.hometab = CursorButton(master=self, text=" Home ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_home, font=LOBSTER())
         self.hometab.grid(padx=25, pady=8, row=1, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.todotab = CursorButton(master=self, text=" To-Do ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_todo, font=UBUNTU())
+        self.todotab = CursorButton(master=self, text=" To-Do ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_todo, font=LOBSTER())
         self.todotab.grid(padx=25, pady=8, row=2, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.statstab = CursorButton(master=self, text=" My Progress ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_stats, font=UBUNTU())
-        self.statstab.grid(padx=25, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.sessionstab = CursorButton(master=self, text=" Live Sessions ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_sessions, font=UBUNTU())
-        self.sessionstab.grid(padx=25, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.pomodorotab = CursorButton(master=self, text=" Pomodoro ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_pomodoro, font=LOBSTER())
+        self.pomodorotab.grid(padx=25, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.statstab = CursorButton(master=self, text=" My Progress ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_stats, font=LOBSTER())
+        self.statstab.grid(padx=25, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
+        self.sessionstab = CursorButton(master=self, text=" Live Sessions ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_sessions, font=LOBSTER())
+        self.sessionstab.grid(padx=25, pady=8, row=5, column=0,columnspan=2, rowspan=1, sticky="ew")
     
     
     def load_music(self):
         self.music_switch_img = ctk.CTkImage(dark_image=Image.open(resource_path("images/Configuration/switch-off.png")))
         self.music = Music(self.master, self.music_switch_img)
-        self.music_switch = ctk.CTkButton(self, text="Ambient Mode", anchor="w", image=self.music_switch_img, command=self.music.music_switch_event, fg_color="gray4", hover=False, corner_radius=20, font=UBUNTU(size=14))
-        self.music_switch.grid(row=5, column=0, sticky="nsew", padx=25,pady=(8,100), columnspan=2)
+        self.music_switch = ctk.CTkButton(self, text="Ambient Mode", anchor="w", image=self.music_switch_img, command=self.music.music_switch_event, fg_color="gray4", hover=False, corner_radius=20, font=LOBSTER())
+        self.music_switch.grid(row=6, column=0, sticky="nsew", padx=25,pady=(8,100), columnspan=2)
         
         self.music_switch.bind("<Enter>", self.hover_cursor_on)
         self.music_switch.bind("<Leave>", self.hover_cursor_off)
 
     def hover_cursor_on(self, event):
-        self.configure(cursor="hand2")
+        event.widget.configure(cursor="hand2")
 
     def hover_cursor_off(self, event):
-        self.configure(cursor="")
+        event.widget.configure(cursor="")
 
     def set_current_tab(self, current_tab):
         if hasattr(self.master.todo, "current_sidepanel"):
@@ -219,6 +221,10 @@ class Sidebar(ctk.CTkFrame):
     def set_todo(self):
         self.master.mainframe.tab_view.set("TO-DO")
         self.set_current_tab(self.todotab)
+        
+    def set_pomodoro(self):
+        self.master.mainframe.tab_view.set("POMODORO")
+        self.set_current_tab(self.pomodorotab)
         
     @async_handler
     async def set_stats(self):
@@ -277,15 +283,12 @@ class MainFrame(ctk.CTkFrame):
     def load_tabview(self):
         self.tab_view = ctk.CTkTabview(master=self, corner_radius=18, fg_color="gray8")
         self.tab_view.grid(padx=0, pady=0,  sticky="nsew",column=0, row=0, columnspan=2, rowspan=4)
-        
-        home = self.tab_view.add("HOME")
-        self.master.home = HomeTab(self.master, home)
-        todo = self.tab_view.add("TO-DO")
-        self.master.todo = ToDoTab(self.master, todo)
-        stats = self.tab_view.add("STATS")
-        self.master.stats = StatsTab(self.master, stats)
-        sessions = self.tab_view.add("SESSIONS")
-        self.master.sessions = SessionsTab(self.master, sessions)
+
+        self.master.home = HomeTab(self.master, self.tab_view.add("HOME"))
+        self.master.todo = ToDoTab(self.master, self.tab_view.add("TO-DO"))
+        self.master.pomodoro = PomodoroTab(self.master, self.tab_view.add("POMODORO"))
+        self.master.stats = StatsTab(self.master, self.tab_view.add("STATS"))
+        self.master.sessions = SessionsTab(self.master, self.tab_view.add("SESSIONS"))
         
         self.tab_view.set("HOME")
         self.master.sidebar.hometab.configure(fg_color=THEME_BLUE)
@@ -342,21 +345,21 @@ class HomeTab():
 
 
     def load_quotes_label(self):
-        self.quotes_label = ctk.CTkLabel(self.quotes_frame, text=f"“{textwrap.fill(self.quotes[self.quote_no]['text'], width=45)}”", font=HELVETICA(weight="bold"), fg_color="transparent", wraplength=780, justify="center")
+        self.quotes_label = ctk.CTkLabel(self.quotes_frame, text=f"“{textwrap.fill(self.quotes[self.quote_no]['text'], width=45)}”", font=LOBSTERTWO(size=26, weight="bold"), fg_color="transparent", wraplength=780, justify="center")
         self.quotes_label.grid(row=0, column=0, pady=(60,5), padx=20, sticky="nsew", columnspan=2)
-        self.quotes_author_label = ctk.CTkLabel(self.quotes_frame, text=f"{self.quotes[self.quote_no]['author']}", font=HELVETICA(size=20, weight="normal"), fg_color="transparent")
+        self.quotes_author_label = ctk.CTkLabel(self.quotes_frame, text=f"{self.quotes[self.quote_no]['author']}", font=LOBSTERTWO(size=20, weight="normal"), fg_color="transparent")
         self.quotes_author_label.grid(row=1, column=0, pady=(0,0), padx=120, columnspan=8, sticky="nsew")
         
-        self.change_quote_btn = CursorButton(self.quotes_frame, text="Refresh Quotes", image=RELOAD_IMG, command=self.change_quote_event, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
+        self.change_quote_btn = CursorButton(self.quotes_frame, text="Refresh Quotes", image=RELOAD_IMG, command=self.change_quote_event, font=LOBSTERTWO(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE,height=30)
         self.change_quote_btn.grid(row=2, column=0, pady=(40,40), padx=120, columnspan=2)
         
         
     def load_home_selector(self):
-        self.home_projectselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=UBUNTU(), dropdown_font=UBUNTU(), dynamic_resizing=False, anchor="w")
+        self.home_projectselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=LOBSTER(), dropdown_font=LOBSTER(), dynamic_resizing=False, anchor="w")
         self.home_projectselector.grid(row=3, column=0, pady=(20,0), padx=(30,0), sticky="ew", columnspan=2)
         self.home_projectselector_dropdown = CTkScrollableDropdown(self.home_projectselector, alpha=0.9, justify="left", command=self.projectselector_event)
         
-        self.home_listselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=UBUNTU(), dropdown_font=UBUNTU(), dynamic_resizing=False, anchor="w")
+        self.home_listselector = ctk.CTkOptionMenu(self.home, fg_color="black", button_color="gray12", dropdown_hover_color="gray13", corner_radius=8, font=LOBSTER(), dropdown_font=LOBSTER(), dynamic_resizing=False, anchor="w")
         self.home_listselector.grid(row=3, column=2, pady=(20,0), padx=(10,0), sticky="ew", columnspan=2)
         self.home_listselector_dropdown = CTkScrollableDropdown(self.home_listselector, alpha=0.9, justify="left")
         
@@ -387,11 +390,11 @@ class HomeTab():
         
         
     def load_home_entry(self):
-        self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
+        self.entry_todo = ctk.CTkEntry(self.home, placeholder_text="What are you planning to complete today? Start grinding champ!", font=LOBSTER(size=18, weight="normal"), corner_radius=50, height=60)
         self.entry_todo.grid(row=4, column=0, pady=(20,5), padx=(20,0),  sticky="ew", columnspan=7)
         
         ADD_IMG.configure(size=(50,50))
-        self.add_todo_button = ctk.CTkButton(self.home, text="", image=ADD_IMG, command=self.add_todo_event, font=UBUNTU(size=40, weight="normal"), corner_radius=100, fg_color="transparent", width=3, hover=False)
+        self.add_todo_button = ctk.CTkButton(self.home, text="", image=ADD_IMG, command=self.add_todo_event, font=LOBSTER(size=40, weight="normal"), corner_radius=100, fg_color="transparent", width=3, hover=False)
         self.add_todo_button.grid(row=4, column=0, pady=(20,0), padx=(10,20), columnspan=8, sticky="e")
         self.add_todo_button.bind("<Enter>", self.hover_cursor_on)
         self.add_todo_button.bind("<Leave>", self.hover_cursor_off)
@@ -401,10 +404,10 @@ class HomeTab():
         self.progressbar = HomeProgressBar(self.home, self.master, self.db)
     
     def hover_cursor_on(self, event):
-        self.configure(cursor="hand2")
+        event.widget.configure(cursor="hand2")
 
     def hover_cursor_off(self, event):
-        self.configure(cursor="")
+        event.widget.configure(cursor="")
     
     @async_handler
     async def add_todo_event(self):
@@ -450,7 +453,7 @@ class HomeProgressBar(ctk.CTkProgressBar):
         self.load_progress_label()
         
     def load_progress_label(self):
-        self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)", font=UBUNTU(size=18, weight="normal"), justify="right")
+        self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)", font=LOBSTER(size=16, weight="normal"), justify="right")
         self.progresslabel.grid(row=6, column=0, pady=0, padx=25, sticky="e", columnspan=8)
 
     def percent(self):
@@ -515,8 +518,8 @@ class ToDoTab():
             project_main_frame = ctk.CTkFrame(self.todoxyframe, fg_color="transparent")
             project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
             
-            project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.master.toggle_edit_sidepanel(p))
-            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED, command=lambda p=project_main_frame, n=project: self.delete_project_frame(p, n))
+            project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=LOBSTER(size=16), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.master.toggle_edit_sidepanel(p))
+            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=LOBSTER(size=16), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED, command=lambda p=project_main_frame, n=project: self.delete_project_frame(p, n))
             
             if self.project_columns == 8:
                 self.project_rows += 1
@@ -547,7 +550,7 @@ class ToDoTab():
             
     def load_sidepanels(self):
         create_sidepanel = CreateSidepanel(self.master, self, self.db, 1.04, 0.7)
-        create_floating_button = CursorButton(self.todo, text="+", fg_color="gray4", width=60, font=UBUNTU(size=30), height=60, border_width=2, border_color="gray20", hover_color="gray20", corner_radius=15, command=create_sidepanel.animate)
+        create_floating_button = CursorButton(self.todo, text="+", fg_color="gray4", width=60, font=LOBSTER(size=30), height=60, border_width=2, border_color="gray20", hover_color="gray20", corner_radius=15, command=create_sidepanel.animate)
         create_floating_button.place(relx=1, rely=1, anchor="se")
         self.current_sidepanel = None
         
@@ -626,6 +629,22 @@ class ToDoTab():
         
         
         
+############################################### TO-DOTAB ###############################################
+
+
+
+class PomodoroTab():
+    def __init__(self, master, parent_tabview):
+        self.master = master
+        self.db = self.master.db
+        
+        self.pomodoro = parent_tabview
+        
+        self.pomodoro.grid_columnconfigure((0),weight=1)
+        self.pomodoro.grid_rowconfigure((0),weight=1)
+        
+        
+        
 ############################################### STATSTAB ###############################################
 
 
@@ -644,7 +663,7 @@ class StatsTab():
         
     
     def load_calendar(self):
-        self.stats_label = ctk.CTkLabel(self.stats, text=f"HERE's WHAT I ACHIEVED!", font=UBUNTU(size=30), fg_color="transparent", wraplength=780, justify="center")
+        self.stats_label = ctk.CTkLabel(self.stats, text=f"HERE's WHAT I ACHIEVED!", font=LOBSTERTWO(size=25), fg_color="transparent", wraplength=780, justify="center")
         self.stats_label.grid(row=0, column=0, pady=(20,5), padx=60, sticky="new", columnspan=4)
         dates = self.db.get_total_tasks()
         if dates == []:
@@ -672,19 +691,19 @@ class StatsTab():
         # meterframe.grid_propagate(False)
         meterframe.grid(row=1, column=2, pady=(20,5), padx=5, columnspan=2, sticky="nsew")
         meter = CTkMeter(meterframe, refresh_animation=True, hover_effect=True, padding=5, background=NAVY_BLUE,
-                foreground=WHITE, troughcolor='#b6b6de', font='Ubuntu 14 bold',
+                foreground=WHITE, troughcolor='#b6b6de', font='Lobster 16 bold',
                 indicatorcolor=THEME_BLUE, command=lambda: print('ok'))
         meter.grid(row=0, column=0, pady=5, sticky="nsew", columnspan=1)
         meter.set(160)  # Value must be between 0 and 360
         meter.textvariable.set(f'{int((meter.arcvariable.get() / 360) * 100)}%',)
         
-        ctk.CTkLabel(meterframe, text="Total Tasks", font=UBUNTU(20)).grid(row=0, column=1, columnspan=2, sticky="nsew")
+        ctk.CTkLabel(meterframe, text="Total Tasks", font=LOBSTER(18)).grid(row=0, column=1, columnspan=2, sticky="nsew")
         
         meterframe2 = ctk.CTkFrame(self.stats, fg_color=NAVY_BLUE, corner_radius=30)
         # meterframe.grid_propagate(False)
         meterframe2.grid(row=2, column=2, pady=(5,5), padx=5, columnspan=2, sticky="nsew")
         meter2 = CTkMeter(meterframe2, refresh_animation=True, hover_effect=True, padding=5, background=NAVY_BLUE,
-                foreground=WHITE, troughcolor='#b6b6de', font='Ubuntu 14 bold',
+                foreground=WHITE, troughcolor='#b6b6de', font='Lobster 16 bold',
                 indicatorcolor=THEME_BLUE, command=lambda: print('ok'))
         meter2.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
         meter2.set(214)  # Value must be between 0 and 360
@@ -695,7 +714,7 @@ class StatsTab():
         # meterframe.grid_propagate(False)
         meterframe3.grid(row=3, column=2, pady=(5,5), padx=5, columnspan=2, sticky="nsew")
         meter3 = CTkMeter(meterframe3, refresh_animation=True, hover_effect=True, padding=5, background=NAVY_BLUE,
-                foreground=WHITE, troughcolor='#b6b6de', font='Ubuntu 14 bold',
+                foreground=WHITE, troughcolor='#b6b6de', font='Lobster 16 bold',
                 indicatorcolor=THEME_BLUE, command=lambda: print('ok'))
         meter3.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
         meter3.set(90)  # Value must be between 0 and 360
@@ -726,10 +745,10 @@ class SessionsTab():
 
 
     def load_sessions_topbar(self):
-        self.sessions_progressbutton = CursorButton(self.sessions, text="Start Session", command=self.start_sessions_timer, font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
+        self.sessions_progressbutton = CursorButton(self.sessions, text="Start Session", command=self.start_sessions_timer, font=LOBSTER(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
         self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=(10, 0), sticky="ew", columnspan=6, rowspan=1)
         
-        self.sessions_leavebutton = CursorButton(self.sessions, text="⍇ Leave Room", command=self.leavesession, font=UBUNTU(size=15), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
+        self.sessions_leavebutton = CursorButton(self.sessions, text="⍇ Leave Room", command=self.leavesession, font=LOBSTER(size=15), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
         self.sessions_leavebutton.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="e", columnspan=8, rowspan=1)
             
         self.sessions_progressbar = ctk.CTkProgressBar(self.sessions, orientation="horizontal", height=15)
@@ -738,7 +757,7 @@ class SessionsTab():
         
         if self.role == 'member':
             self.sessions_progressbutton.destroy()
-            self.sessions_progressbutton = CursorButton(self.sessions, state="disabled", text="The host can start a session", font=UBUNTU(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
+            self.sessions_progressbutton = CursorButton(self.sessions, state="disabled", text="The host can start a session", font=LOBSTER(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
             self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=(10, 0), sticky="ew", columnspan=6, rowspan=1)
         
         
@@ -750,9 +769,9 @@ class SessionsTab():
         self.sessions_frame.bind_all("<Button-4>", lambda e: self.sessions_frame._parent_canvas.yview("scroll", -1, "units"))
         self.sessions_frame.bind_all("<Button-5>", lambda e: self.sessions_frame._parent_canvas.yview("scroll", 1, "units"))
         
-        self.send_area = ctk.CTkEntry(self.sessions, placeholder_text="Say Hello to your session partner!", font=UBUNTU(size=18, weight="normal"), corner_radius=50, height=60)
+        self.send_area = ctk.CTkEntry(self.sessions, placeholder_text="Say Hello to your session partner!", font=LOBSTER(size=18, weight="normal"), corner_radius=50, height=60)
         self.send_area.grid(row=6, column=0, pady=(0,8), padx=(15,0),  sticky="sew", columnspan=7, rowspan=1)
-        self.send_button = CursorButton(self.sessions, text="➤", command=self.add_own_message, font=UBUNTU(size=30, weight="normal"), corner_radius=100, fg_color="transparent", height=60, hover_color="gray4")
+        self.send_button = CursorButton(self.sessions, text="➤", command=self.add_own_message, font=LOBSTER(size=30, weight="normal"), corner_radius=100, fg_color="transparent", height=60, hover_color="gray4")
         self.send_button.grid(row=6, column=7, pady=(0,8), padx=(0,15), columnspan=1, sticky="se", rowspan=1)
         
         
@@ -773,7 +792,7 @@ class SessionsTab():
         message_frame.grid(row=self.total_message, column=0, sticky="new", padx=5,pady=5, columnspan=2, rowspan=1)
         message_frame.grid_columnconfigure((0,1), weight=1)
         
-        message_label = ctk.CTkLabel(message_frame, text=f"[You]: {message}", font=UBUNTU(size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
+        message_label = ctk.CTkLabel(message_frame, text=f"[You]: {message}", font=LOBSTER(size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
         message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
         
         self.sessions_frame.after(10, self.sessions_frame._parent_canvas.yview_moveto, 1.0) #Scroll to bottom on new message
@@ -802,7 +821,7 @@ class SessionsTab():
         message_frame.grid(row=self.total_message, column=0, sticky="new", padx=5,pady=5, columnspan=2, rowspan=1)
         message_frame.grid_columnconfigure((0,1), weight=1)
         
-        message_label = ctk.CTkLabel(message_frame, text=f"[{user}]: {message}", font=UBUNTU(size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
+        message_label = ctk.CTkLabel(message_frame, text=f"[{user}]: {message}", font=LOBSTER(size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
         message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
             
         self.total_message += 1
@@ -992,7 +1011,7 @@ class SessionsTab():
 
 class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
     def __init__(self, master, todotab, db, start_pos, end_pos, label):
-        super().__init__(master, label_text=label, label_fg_color=DULL_BLUE, border_width=2, border_color=WHITE, corner_radius=8, fg_color="black", label_font=UBUNTU(size=18))
+        super().__init__(master, label_text=label, label_fg_color=DULL_BLUE, border_width=2, border_color=WHITE, corner_radius=8, fg_color="black", label_font=LOBSTER(size=18))
         
         self.master = master
         self.todo = todotab
@@ -1063,26 +1082,26 @@ class CreateSidepanel(Sidepanel):
         self.todo = todo
 
         self.load_createproject_frame()
-        self.load_buttons(self.create_project_event, 50)
+        self.load_buttons(self.create_project_event, 30)
 
     def load_createproject_frame(self):
         self.createproject_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.createproject_frame.grid_columnconfigure((0,1,2,3),weight=1)
         self.createproject_frame.grid(column=0, row=0, sticky="nsew", columnspan=4, padx=10, pady=5)
-        ctk.CTkLabel(self.createproject_frame, text="- There must be at least one List and a Task inside it\nto create a new project.\n- To create a List in an existing project,\nenter the exact project title.\n- To create a Task,\nenter the exact Project and List titles.", font=UBUNTU(12, 'normal'), justify="left").grid(column=0, row=0, sticky="w", padx=20, pady=(10,20), columnspan=4)
+        ctk.CTkLabel(self.createproject_frame, text="- There must be at least one List and a Task inside it\nto create a new project.\n- To create a List in an existing project,\nenter the exact project title.\n- To create a Task,\nenter the exact Project and List titles.", font=LOBSTER(16, 'normal'), justify="left").grid(column=0, row=0, sticky="w", padx=20, pady=(10,20), columnspan=4)
         
         ttk.Separator(self.createproject_frame).grid(column=0, row=1, columnspan=4, sticky="ew")
         
-        ctk.CTkLabel(self.createproject_frame, text="New/Existing Project Title:", font=UBUNTU(13), justify="left", anchor="w").grid(column=0, row=2, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=4)
-        self.createproject_frame_projectentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="Social Media Detox", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+        ctk.CTkLabel(self.createproject_frame, text="New/Existing Project Title:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=2, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=4)
+        self.createproject_frame_projectentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="Social Media Detox", font=LOBSTER(size=16, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
         self.createproject_frame_projectentry.grid(column=0, row=3, sticky="ew", padx=5, pady=(5,0), columnspan=4)
         
-        ctk.CTkLabel(self.createproject_frame, text="New/Existing List Title:", font=UBUNTU(13), justify="left", anchor="w").grid(column=0, row=4, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=4)
-        self.createproject_frame_listentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="No Instagram", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+        ctk.CTkLabel(self.createproject_frame, text="New/Existing List Title:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=4, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=4)
+        self.createproject_frame_listentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="No Instagram", font=LOBSTER(size=16, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
         self.createproject_frame_listentry.grid(column=0, row=5, sticky="ew", padx=5, pady=(5,0), columnspan=4)
         
-        ctk.CTkLabel(self.createproject_frame, text="New To-Do Title:", font=UBUNTU(13), justify="left", anchor="w").grid(column=0, row=6, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=4)
-        self.createproject_frame_taskentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="Day 1", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+        ctk.CTkLabel(self.createproject_frame, text="New To-Do Title:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=6, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=4)
+        self.createproject_frame_taskentry = ctk.CTkEntry(self.createproject_frame, placeholder_text="Day 1", font=LOBSTER(size=16, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
         self.createproject_frame_taskentry.grid(column=0, row=7, sticky="ew", padx=5, pady=(5,0), columnspan=4)
         
     
@@ -1120,8 +1139,8 @@ class CreateSidepanel(Sidepanel):
             last_project_main_frame = self.todo.project_main_frame_list[-1]
             project_main_frame = ctk.CTkFrame(self.master.todo.todoxyframe, fg_color="transparent")
             project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
-            project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.master.toggle_edit_sidepanel(p))
-            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED, command=lambda p=project_main_frame, n=project: self.todo.delete_project_frame(p, n))
+            project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=LOBSTER(size=14), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.master.toggle_edit_sidepanel(p))
+            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=LOBSTER(size=14), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED, command=lambda p=project_main_frame, n=project: self.todo.delete_project_frame(p, n))
             
             if self.master.todo.project_columns == 8:
                 self.master.todo.project_rows += 1
@@ -1163,7 +1182,7 @@ class CreateSidepanel(Sidepanel):
         
 class EditSidepanel(Sidepanel):
     def __init__(self, master, todo, db, start_pos, end_pos, projectname):
-        super().__init__(master, todo, db, start_pos, end_pos, f"EDIT {projectname.upper()}")
+        super().__init__(master, todo, db, start_pos, end_pos, f"EDIT {projectname}")
         
         self.master = master
         self.todo = todo
@@ -1181,12 +1200,12 @@ class EditSidepanel(Sidepanel):
         self.editproject_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.editproject_frame.grid(column=0, row=1, sticky="nsew", columnspan=4, padx=10, pady=5)
         self.editproject_frame.grid_columnconfigure((0,1,2,3), weight=1)
-        ctk.CTkLabel(self.editproject_frame, text="- Rename Project and its list(s).\n- Leave the textbox empty for no changes.", font=UBUNTU(12, 'normal'), justify="left").grid(column=0, row=0, sticky="w", padx=20, pady=(0,15), columnspan=4)
+        ctk.CTkLabel(self.editproject_frame, text="- Rename Project and its list(s).\n- Leave the textbox empty for no changes.", font=LOBSTER(16, 'normal'), justify="left").grid(column=0, row=0, sticky="w", padx=20, pady=(0,15), columnspan=4)
         
         ttk.Separator(self.editproject_frame).grid(column=0, row=1, columnspan=4, sticky="ew")
         
-        ctk.CTkLabel(self.editproject_frame, text="Rename Project:", font=UBUNTU(15), justify="left", anchor="w").grid(column=0, row=2, sticky="nsew", padx=(5,0), pady=(15,5), columnspan=4)
-        self.editproject_frame_projectentry = ctk.CTkEntry(self.editproject_frame, placeholder_text=f"{self.projectname}", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+        ctk.CTkLabel(self.editproject_frame, text="Rename Project:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=2, sticky="nsew", padx=(5,0), pady=(15,5), columnspan=4)
+        self.editproject_frame_projectentry = ctk.CTkEntry(self.editproject_frame, placeholder_text=f"{self.projectname}", font=LOBSTER(size=16, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
         self.editproject_frame_projectentry.grid(column=0, row=3, sticky="ew", padx=(5,5), pady=(5,20), columnspan=4)
         
         self.all_entries.append(self.editproject_frame_projectentry)
@@ -1199,13 +1218,13 @@ class EditSidepanel(Sidepanel):
         for i, mylist in enumerate(mylists):
             self.components[mylist.listname] = []
             
-            label = ctk.CTkLabel(self.editproject_frame, text=f"{SUB}{mylist.listname.upper()}:", font=UBUNTU(15))
+            label = ctk.CTkLabel(self.editproject_frame, text=f"{SUB}{mylist.listname}:", font=LOBSTER(18))
             label.grid(column=0, row=j, sticky="nsw", padx=(5,0), pady=(15,5), columnspan=4)
             
-            btn = ctk.CTkButton(self.editproject_frame, command=lambda l=mylist, lab=label: self.temp_remove_list(l, lab), text=f"", image=DELETE_IMG, font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED,   hover_color=RED, width=5)
+            btn = ctk.CTkButton(self.editproject_frame, command=lambda l=mylist, lab=label: self.temp_remove_list(l, lab), text=f"", image=DELETE_IMG, font=LOBSTER(size=16), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED,   hover_color=RED, width=5)
             btn.grid(column=0, row=j, sticky="e", padx=(10,0), pady=(5,5), columnspan=4)
             
-            editproject_frame_listentry = ctk.CTkEntry(self.editproject_frame, placeholder_text=f"A cool new name for the list...", font=UBUNTU(size=12, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
+            editproject_frame_listentry = ctk.CTkEntry(self.editproject_frame, placeholder_text=f"A cool new name for the list...", font=LOBSTER(size=16, weight="normal"), corner_radius=10, height=30, fg_color=NAVY_BLUE, border_width=0)
             editproject_frame_listentry.grid(column=0, row=j+1, sticky="ew", padx=(5,5), pady=(5,5), columnspan=4)
             
             self.all_entries.append(editproject_frame_listentry)
@@ -1214,9 +1233,9 @@ class EditSidepanel(Sidepanel):
             values = self.db.search_todo_by_list(mylist.listname, self.projectname)
             
             for val in values:
-                seclabel = ctk.CTkLabel(self.editproject_frame, text=f"{SUBSUB}{textwrap.fill(val['task_name'],30)}", font=UBUNTU(12, "bold"), justify="left", anchor="w")
+                seclabel = ctk.CTkLabel(self.editproject_frame, text=f"{SUBSUB}{textwrap.fill(val['task_name'],30)}", font=LOBSTER(16, "bold"), justify="left", anchor="w")
                 seclabel.grid(column=0, row=j, sticky="nsew", padx=(5,10), pady=(5,5), columnspan=4)
-                secbtn = ctk.CTkButton(self.editproject_frame, command=lambda t=val['id'], l=seclabel, m=mylist: self.temp_remove_task(t, l, m), text=f"{CROSS}", font=UBUNTU(size=12), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED,   hover_color=RED, width=5)
+                secbtn = ctk.CTkButton(self.editproject_frame, command=lambda t=val['id'], l=seclabel, m=mylist: self.temp_remove_task(t, l, m), text=f"{CROSS}", font=LOBSTER(size=16), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED,   hover_color=RED, width=5)
                 secbtn.grid(column=0, row=j, sticky="e", padx=(10,0), pady=(5,5), columnspan=4)
                 
                 self.components[mylist.listname].extend([seclabel, secbtn])
@@ -1329,7 +1348,7 @@ class EditSidepanel(Sidepanel):
 
 class ProjectFrame(ctk.CTkScrollableFrame):
     def __init__(self, root, base_frame, db, projectname, columnspan):
-        super().__init__(base_frame, label_text=projectname, label_fg_color="gray8", border_width=3, border_color=BLACK, corner_radius=18, fg_color="gray13", label_font=UBUNTU(size=15))
+        super().__init__(base_frame, label_text=projectname, label_fg_color="gray8", border_width=3, border_color=BLACK, corner_radius=18, fg_color="gray13", label_font=LOBSTER(size=18))
         
         self.root = root
         self.db = db
@@ -1380,7 +1399,7 @@ class ProjectFrame(ctk.CTkScrollableFrame):
 
 class ToDoFrame(ctk.CTkScrollableFrame):
     def __init__(self, root, master, db, listname="MY TO-DO LIST", projectname="Default Project", projectcolumnspan="big", todocolumnspan="big"):
-        super().__init__(master, label_text=f"⇲ {listname}", label_fg_color=DULL_BLUE, border_width=1, border_color=WHITE, corner_radius=8, fg_color=NAVY_BLUE, label_font=UBUNTU(size=15))
+        super().__init__(master, label_text=f"⇲ {listname}", label_fg_color=DULL_BLUE, border_width=1, border_color=WHITE, corner_radius=8, fg_color=NAVY_BLUE, label_font=LOBSTER(size=16))
         
         self.root = root
         self.master = master
@@ -1400,7 +1419,7 @@ class ToDoFrame(ctk.CTkScrollableFrame):
     def load_lists(self):
         values = self.db.search_todo_by_list(self.listname, self.projectname)
         for i, val in enumerate(values):
-            checkbox = ctk.CTkCheckBox(self, text=f"{self.wrap(val['task_name'])}", hover=True, onvalue="on", offvalue="off", font=UBUNTU(12, "normal"), command=self.mark_as_done_checkbox)
+            checkbox = ctk.CTkCheckBox(self, text=f"{self.wrap(val['task_name'])}", hover=True, onvalue="on", offvalue="off", font=LOBSTER(16, "normal"), command=self.mark_as_done_checkbox)
 
             if val['status']:
                 checkbox.cget("font").configure(overstrike=True, slant="italic")
@@ -1411,7 +1430,7 @@ class ToDoFrame(ctk.CTkScrollableFrame):
             self.checkboxes.append(checkbox)
         
     def create_todo(self, val):
-        checkbox = ctk.CTkCheckBox(self, text=f"{self.wrap(val['task_name'])}", hover=True, onvalue="on", offvalue="off", font=UBUNTU(12, "normal"), command=self.mark_as_done_checkbox)
+        checkbox = ctk.CTkCheckBox(self, text=f"{self.wrap(val['task_name'])}", hover=True, onvalue="on", offvalue="off", font=LOBSTER(16, "normal"), command=self.mark_as_done_checkbox)
         checkbox.task_id = val['id']
         checkbox.grid(row=len(self.checkboxes)+1, column=0, padx=5, pady=5, sticky="ew", columnspan=8)
         self.checkboxes.append(checkbox)
@@ -1523,7 +1542,7 @@ class ImageButton(ctk.CTkButton):
     def __init__(self, master, image_path, command, image_height=50, image_width=50, **kwargs):
         super().__init__(master, **kwargs)
         self.image = ctk.CTkImage(dark_image=Image.open(image_path), size=(image_width, image_height))
-        self.button = ctk.CTkButton(self.master, text="", image=self.image, command=command, font=UBUNTU(size=40, weight="normal"), corner_radius=20, fg_color="transparent", width=3, hover=False)
+        self.button = ctk.CTkButton(self.master, text="", image=self.image, command=command, font=LOBSTER(size=40, weight="normal"), corner_radius=20, fg_color="transparent", width=3, hover=False)
 
 
 

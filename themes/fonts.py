@@ -61,8 +61,11 @@ SWITCH_ON = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Configur
 SWITCH_OFF = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Configuration/switch-off.png")))
 TODO_HUMAN = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Humans/todo-human.png")))
 
-def UBUNTU(size=15, weight="bold"):
-    return ctk.CTkFont(family="Ubuntu", size=size, weight=weight)
+def LOBSTER(size=16, weight="bold"):
+    return ctk.CTkFont(family="Lobster Two", size=size, weight=weight)
 
-def HELVETICA(size=30, weight="bold", slant="italic"):
-    return ctk.CTkFont(family="Helvetica", size=size, weight=weight, slant=slant)
+def LOBSTERTWO(size=17, weight="bold"):
+    return ctk.CTkFont(family="LOBSTER", size=size, weight=weight)
+
+def UBUNTU(size=18, weight="bold", slant="normal"):
+    return ctk.CTkFont(family="UBUNTU", size=size, weight=weight, slant=slant)
