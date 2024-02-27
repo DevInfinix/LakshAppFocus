@@ -23,6 +23,7 @@ try:
     from tkinter import filedialog
     import tkinter.ttk as ttk
     from CTkMessagebox import CTkMessagebox
+    import CTkSpinbox
     from async_tkinter_loop import async_handler
     from async_tkinter_loop.mixins import AsyncCTk
     from modules import *
@@ -35,10 +36,12 @@ try:
     import textwrap
 
     from os import environ
+    from itertools import cycle
     import colorama
     import datetime
     import asyncio
     import websockets
+    import plyer
 except ImportError as e:
     logging.critical(f"Couldn't Import Modules: {e}", exc_info=True)
     print(colorama.Fore.RED + "ImportError: Check logs for more info.")
@@ -65,28 +68,34 @@ class App(ctk.CTk, AsyncCTk):
         super().__init__()
         self.withdraw()
         logging.info('LakshApp initialized...')
+        if not plyer.wifi.is_connected():
+            notify("Not connected to internet", "You're not connected to the internet. Some features might not work as intended.")
         self.splashapp = SplashApp(self)
         self.splashapp.attributes('-topmost', True)
         logging.info('SplashScreen initialized...')
         self.title("LakshApp - Stay Focused and Motivated")
-        self.resizable(False, False)
+        self.resizable(True, True)
         #self.iconbitmap('./images/lakshapp.ico')
         self.width = 1100
         self.height = 620
         place_x = (self.winfo_screenwidth()//2) - (self.width//2)
         place_y = (self.winfo_screenheight()//2) - (self.height//2)
         self.geometry(f"{self.width}x{self.height}+{place_x}+{place_y}")
+        self.minsize(1100,620)
         self.grid_columnconfigure((1,2,3), weight=1)
         self.grid_columnconfigure(0, weight=0)
         self.grid_rowconfigure(0, weight=1)
         self.version = __version__
+    
         
         
         ############################################### DATABASE ###############################################
     
         
         self.db = Database('database.db')
-        self.db.create_table()
+        self.db.create_todo_table()
+        self.db.create_pomodorosettings_table()
+        self.db.create_pomodoro_table()
         
         
         ############################################### SIDEBAR INITIALIZE ###############################################
@@ -105,14 +114,22 @@ class App(ctk.CTk, AsyncCTk):
         logging.info('LakshApp is Running!')
         
         
+        
 ############################################### FUNCTIONS ###############################################
 
     
+    
+    def fullscreen(self):
+        if self.attributes("-fullscreen"):
+            self.attributes("-fullscreen", False)
+        elif not self.attributes("-fullscreen"):
+            self.attributes("-fullscreen", True)
+            
     def hover_cursor_on(self, event):
-        self.configure(cursor="hand2")
+        event.widget.configure(cursor="hand2")
 
     def hover_cursor_off(self, event):
-        self.configure(cursor="")
+        event.widget.configure(cursor="")
         
     def select_all(self):
         if self.mainframe.tab_view.get() == 'HOME':
@@ -423,7 +440,7 @@ class HomeTab():
         self.master.todo.search_projectframe(project).search_listframe(mylist).create_todo(self.db.search_todo_by_id(db_return))
         self.master.todo.project_sidepanels[project] = EditSidepanel(self.master, self.master.todo, self.db, 1.04, 0.7, project)
             
-        CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List.\nGo to To-Do Tab to view more!", sound=True, option_1="There we go!")
+        showsuccess("The task has been added to your To-Do List.\nGo to To-Do Tab to view more!")
         self.entry_todo.delete(0, "end")
         self.master.levelsound.play()
         
@@ -590,7 +607,7 @@ class ToDoTab():
                         previous_frame.grid(row=info['row'], column=0, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
                 self.db.delete_project(project)
                 self.project_main_frame_list.remove(frame)
-                c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The project has been successfully deleted!", sound=True, option_1="There we go!")
+                c = showsuccess("The project has been successfully deleted!")
                 c.get()
                 self.master.home.load_home_selector_dropdown()
         
@@ -624,7 +641,7 @@ class ToDoTab():
 
         self.db.delete_list(projectname, frame.listname)
         mylist_list.remove(frame)
-        c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The List has been successfully deleted!", sound=True, option_1="There we go!")
+        c = showsuccess("The List has been successfully deleted!")
         c.get()
         
         
@@ -640,11 +657,151 @@ class PomodoroTab():
         
         self.pomodoro = parent_tabview
         
-        self.pomodoro.grid_columnconfigure((0),weight=1)
-        self.pomodoro.grid_rowconfigure((0),weight=1)
+        self.pomodoro.grid_columnconfigure((0,1,2,3),weight=1)
+        self.pomodoro.grid_rowconfigure((0,1,2,3),weight=1)
+
+        self.set_focus_length = ctk.IntVar()
+        self.set_shortbreak_length = ctk.IntVar()
+        self.set_longbreak_length = ctk.IntVar()
+        self.set_pomodoros_until_shortbreak = ctk.IntVar()
+        self.set_pomodoros_until_longbreak = ctk.IntVar()
+        self.set_automatic = ctk.BooleanVar()
+        self.set_notifications = ctk.BooleanVar()
+        
+        self.states = cycle([None, 'focus', None, 'shortbreak', None, 'longbreak'])
+        self.statuses = cycle([FOCUS_POMO, SHORT_POMO, LONG_POMO])
+        self.current_state = next(self.states)
+        self.pomodoro_playing = False
+        self.pomodoro_completed = True
+        self.load_pomodoro_sidepanel()
+        self.load_components()
+        
+    
+    def load_pomodoro_sidepanel(self):
+        self.options_sidepanel = PomodoroSidepanel(self.master, self, self.db, 1.04, 0.7)
+        
+        
+    def load_components(self):
+        self.status = CursorButton(self.pomodoro, text="", image=next(self.statuses), hover=False)
+        self.status.grid(row=0,column=0,columnspan=4,sticky="nsew")
+        
+        self.pomodoro_count_label = ctk.CTkLabel(self.pomodoro, text=f"{self.db.get_today_pomodoros()} pomodoros completed today", font=LOBSTERTWO(17), fg_color="gray18", corner_radius=30)
+        self.pomodoro_count_label.grid(row=1,column=0,columnspan=4,sticky="ns", padx=6, pady=10)
+        
+        self.minutes = ctk.CTkLabel(self.pomodoro, text="25", font=UBUNTU(220), fg_color="black", corner_radius=30)
+        self.minutes.grid(row=2,column=0,columnspan=2,sticky="nse", padx=6, pady=10)
+        
+        self.seconds = ctk.CTkLabel(self.pomodoro, text="00", font=UBUNTU(220), fg_color="black", corner_radius=30)
+        self.seconds.grid(row=2,column=2,columnspan=2,sticky="nsw", padx=6, pady=10)
+        
+        self.lowerframe = ctk.CTkFrame(self.pomodoro, fg_color="transparent")
+        self.lowerframe.grid(row=3, column=0, columnspan=4)
+        
+        self.options = CursorButton(self.lowerframe, text="", image=OPTIONS_POMO, hover=False, width=60, command=self.show_sidepanel)
+        self.options.grid(row=0,column=0,columnspan=1,sticky="ns", padx=8)
+        
+        self.play = CursorButton(self.lowerframe, text="", image=PAUSE_POMO, hover=False, width=60, command=self.toggle_pomodoro)
+        self.play.grid(row=0,column=1,columnspan=1,sticky="ns", padx=8)
+        
+        self.skip = CursorButton(self.lowerframe, text="", image=SKIP_POMO, hover=False, width=60, command=self.skip_pomodoro)
+        self.skip.grid(row=0,column=2,columnspan=1,sticky="ns", padx=8)
+        
+    
+    def show_sidepanel(self):
+        self.options_sidepanel.animate()
+    
+    
+    def toggle_pomodoro(self):
+        if not self.pomodoro_playing:
+            self.play.configure(image=RESUME_POMO)
+            self.pomodoro_playing = True
+            if self.current_state == None:
+                self.start_new()
+            else:
+                self.resume_current_state()
+        else:
+            self.play.configure(image=PAUSE_POMO)
+            self.pomodoro_playing = False
+            self.pause_current_state()
+    
+    def start_new(self):
+        settings = self.db.get_pomodoro_settings()
+        notifs = self.set_notifications.get()
+        self.current_state = next(self.states)
+        self.pomodoro_completed = False
+        if self.current_state == "focus":
+            if notifs:
+                notify("Pomodoro Started", f"Next break is in {settings['focuslength']} minutes. Keep grinding!")
+            self.start_focus(10)
+        elif self.current_state == "shortbreak":
+            if notifs:
+                notify("Short Break Started", f"Next pomodoro is in {settings['shortbreaklength']} minutes. Keep grinding!")
+            self.start_shortbreak(settings['shortbreaklength'])
+        elif self.current_state == "longbreak":
+            if notifs:
+                notify("Long Break Started", f"Next pomodoro is in {settings['longbreaklength']} minutes. Keep grinding!")
+            self.start_longbreak(settings['longbreaklength'])
+                    
+    def skip_pomodoro(self):
+        if self.current_state == None:
+            self.start_new()
+        elif self.current_state != None:
+            dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Do you want to skip the current pomodoro/break?", sound=True, options=["I'm done", "Don't end it yet"])
+            if dialog.get() == "I'm done":
+                self.end_current_state()
+    
+    def start_focus(self, length):
+        FlipClock(self.master, self, length).start_timer()
+            
+        
+    
+
+
+
         
         
         
+class FlipClock():
+    def __init__(self, master, pomodoro, time_limit):
+        self.master = master
+        self.pomodoro = pomodoro
+        self.db = self.pomodoro.db
+        time_limit = datetime.timedelta(seconds=int(time_limit))
+        self.time_limit = time_limit
+        self.remaining_time = time_limit
+
+    def update_display(self):
+        minutes, seconds = str(self.remaining_time.seconds // 60), str(self.remaining_time.seconds % 60)
+        if len(minutes) == 1:
+            minutes = "0" + minutes
+        if len(seconds) == 1:
+            seconds = "0" + seconds
+        self.pomodoro.minutes.configure(text=f"{minutes}")
+        self.pomodoro.seconds.configure(text=f"{seconds}")
+
+    def start_timer(self):
+        self.master.after(1000, self.tick)
+
+    def tick(self):
+        self.remaining_time -= datetime.timedelta(seconds=1)
+        if self.remaining_time < datetime.timedelta(seconds=0):
+            settings = self.db.get_pomodoro_settings()
+            if not settings['automatic']:
+                self.db.add_pomodoro()
+                self.pomodoro.pomodoro_count_label.configure(text=f"{self.db.get_today_pomodoros()} pomodoros completed today")
+                self.pomodoro.current_state = next(self.pomodoro.states)
+                self.pomodoro.status.configure(image=next(self.pomodoro.statuses))
+                self.pomodoro.pomodoro_completed = True
+                self.pomodoro.pomodoro_playing = False
+                
+                if settings["notifications"]:
+                    notify("Pomodoro Completed", f"Well Done. Keep grinding!")
+        else:
+            self.update_display()
+            self.start_timer()
+            
+            
+            
 ############################################### STATSTAB ###############################################
 
 
@@ -685,7 +842,6 @@ class StatsTab():
             self.calendar.grid(row=1, column=0, pady=(20,5), padx=5, sticky="nsew", columnspan=2, rowspan=3)
             
     def load_progressbar(self):
-        from modules import CTkMeter
         meterframe = ctk.CTkFrame(self.stats, fg_color=NAVY_BLUE, corner_radius=30)
         meterframe.grid_columnconfigure((0,1,2,3), weight=1)
         # meterframe.grid_propagate(False)
@@ -809,7 +965,7 @@ class SessionsTab():
             await self.socket.send(json.dumps(data))
         except Exception as e:
             logging.error(e)
-            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check your internet connection.", sound=True, option_1="Ah sad!")
+            showerror("Server disconnected. Please check your internet connection.", "Ah sad")
             await self.close_socket()
         self.send_area.delete(0, "end")
         
@@ -842,7 +998,7 @@ class SessionsTab():
                 await self.socket.send(json.dumps(event))
             except Exception as e:
                 logging.error(e)
-                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check your internet connection.", sound=True, option_1="Ah sad!")
+                showerror("Server disconnected. Please check your internet connection.", "Ah sad!")
                 await self.close_socket()
         
     
@@ -858,7 +1014,7 @@ class SessionsTab():
                 await self.socket.send(json.dumps(event))
             except Exception as e:
                 logging.error(e)
-                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check your internet connection.", sound=True, option_1="Ah sad!")
+                showerror("Server disconnected. Please check your internet connection.", "Ah sad!")
                 await self.close_socket()
         elif dialog.get() == "Don't end it yet":
             pass
@@ -877,7 +1033,7 @@ class SessionsTab():
                 await asyncio.gather(self.receive_message(socket, 'host', username))
         except Exception as e:
             logging.error(e)
-            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check internet connection.", sound=True, option_1="Ah sad!")
+            showerror("Server disconnected. Please check your internet connection.", "Ah sad!")
             await self.close_socket()
          
        
@@ -896,7 +1052,7 @@ class SessionsTab():
                 await asyncio.gather(self.receive_message(socket, 'member', username))
         except Exception as e:
             logging.error(e)
-            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Server disconnected. Please check your internet connection.", sound=True, option_1="Ah sad!")
+            showerror("Server disconnected. Please check your internet connection.", "Ah sad!")
             await self.close_socket()
                 
                 
@@ -905,11 +1061,11 @@ class SessionsTab():
             event = json.loads(message)
             if event['type'] == 'error':
                 if event['errortype'] == 'SessionNotFound':
-                    CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=event['message'], sound=True, option_1="Oh shit!")
+                    showerror(event['message'])
                     self.master.sidebar.set_home()
                     break
                 if event['errortype'] == 'RoomFull':
-                    CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=event['message'], sound=True, option_1="Oh shit!")
+                    showerror(event['message'])
                     self.master.sidebar.set_home()
                     break
             if event['type'] == 'started':
@@ -936,7 +1092,7 @@ class SessionsTab():
                 duration = event['duration']
                 time = self.master.convert_time(duration)
                 self.sessions_progressbar_task = asyncio.create_task(self.update_sessions_progressbar(time))
-                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f'Session started for {duration}!\nKeep Grinding!', sound=True, option_1="Let's do this!")
+                showsuccess(f'Session started for {duration}!\nKeep Grinding!', "Let's do this!")
                 self.master.levelsound.play()
                 if self.role == 'member':
                     self.sessions_progressbutton.configure(fg_color=THEME_RED, hover_color=RED, border_color=RED, state="disabled", text="Session started by the host")
@@ -947,7 +1103,7 @@ class SessionsTab():
                 self.sessions_progressbar_task.cancel()
                 await asyncio.sleep(1)
                 self.sessions_progressbar.set(0)
-                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=f'Session stopped by the host!\nSee you soon!', sound=True, option_1="Lost it!")
+                showerror('Session stopped by the host!\nSee you soon!', "Lost it!")
                 if self.role == 'member':
                     self.sessions_progressbutton.configure(hover_color=THEME_BLUE, fg_color="gray13", state="disabled", text="The host can start a session", border_color=THEME_BLUE)
                 else:
@@ -957,7 +1113,7 @@ class SessionsTab():
                 if event['from'] == 'server':
                     if event['role'] == 'host':
                         logging.info('The host has been disconnected')
-                        CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='The host has been disconnected', sound=True, option_1="Oh shit!")
+                        showerror('The host has been disconnected')
                         await asyncio.sleep(1)
                         self.master.mainframe.tab_view.set("HOME")
                         self.master.sidebar.set_current_tab(self.master.sidebar.hometab)
@@ -969,7 +1125,7 @@ class SessionsTab():
                     elif event['role'] == 'member':
                         logging.info('Participant disconnected')
                         if role == 'member':
-                            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message='You have been disconnected', sound=True, option_1="Oh Shit!")
+                            showerror('You have been disconnected')
                             await asyncio.sleep(1)
                             self.master.mainframe.tab_view.set("HOME")
                             self.master.sidebar.set_current_tab(self.master.sidebar.hometab)
@@ -983,7 +1139,7 @@ class SessionsTab():
         while True:
             if cur/time == 1:
                 self.sessions_progressbar.set(0)
-                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f'Session completed! Well done comrade!', sound=True, option_1="Less gooo!")
+                showsuccess('Session completed! Well done comrade!', "Less gooo!")
                 self.trumpetsound.play()
                 if self.role == 'member':
                     self.sessions_progressbutton.configure(hover_color=THEME_BLUE, fg_color="gray13", state="disabled", text="The host can start a session", border_color=THEME_BLUE)
@@ -1035,17 +1191,19 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
             
 
     def animate_forward(self):
-        if self.master.todo.current_sidepanel:
-            if (not self.master.todo.current_sidepanel.is_closed):
-                self.master.todo.current_sidepanel.animate_backwards()
-                return
+        if self.todo:
+            if self.master.todo.current_sidepanel:
+                if (not self.master.todo.current_sidepanel.is_closed):
+                    self.master.todo.current_sidepanel.animate_backwards()
+                    return
         if self.pos > self.end_pos:
             self.pos -= 0.03
             self.place(relx = self.pos, rely = 0.05, relwidth = self.width, relheight = 0.9)
             self.after(5, self.animate_forward)
         else:
             self.is_closed = False
-            self.master.todo.current_sidepanel = self
+            if self.todo:
+                self.master.todo.current_sidepanel = self
 
     def animate_backwards(self):
         if self.pos < self.start_pos:
@@ -1054,7 +1212,8 @@ class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
             self.after(5, self.animate_backwards)
         else:
             self.is_closed = True
-            self.master.todo.current_sidepanel = None
+            if self.todo:
+                self.master.todo.current_sidepanel = None
     
     
     def load_buttons(self, checkcommand, pady, place="down"):
@@ -1166,7 +1325,7 @@ class CreateSidepanel(Sidepanel):
             self.todo.project_main_frame_list.append(project_main_frame)
             self.master.todo.project_frame_list.append(project_frame)
 
-        CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task has been added to your To-Do List!", sound=True, option_1="There we go!")
+        showsuccess("The task has been added to your To-Do List!")
         self.clear_entries([self.createproject_frame_projectentry, self.createproject_frame_listentry, self.createproject_frame_taskentry])
         self.master.levelsound.play()
         self.animate()
@@ -1307,7 +1466,7 @@ class EditSidepanel(Sidepanel):
                                     self.removed_tasks[i].checkboxes.remove(j)
                         self.permanently_removed.append(i)
                     self.removed_tasks = {}
-                    c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message="The task(s) were removed from your To-Do List!", sound=True, option_1="There we go!")
+                    c = showsuccess("The task(s) were removed from your To-Do List!")
                     c.get()
 
         list_updated_boolean = False
@@ -1319,14 +1478,14 @@ class EditSidepanel(Sidepanel):
                 self.editproject_frame_listentries[i].configure(placeholder_text=get)
                 self.projectframe.search_listframe(i).configure(label_text=f"⇲ {get}")
         if list_updated_boolean:
-            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f"Congrats! Your List(s) were successfully renamed!", sound=True, option_1="Sounds cool!")
+            showsuccess("Congrats! Your List(s) were successfully renamed!", "Sounds cool!")
                 
         if renamed_project.strip():
             self.db.update_project_name(self.projectname, renamed_project)
             self.projectframe.configure(label_text=renamed_project)
             self.projectname = renamed_project
             self.editproject_frame_projectentry.configure(placeholder_text=renamed_project)
-            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=f"Congrats! Your Project is renamed to '{renamed_project}'", sound=True, option_1="Sounds cool!")
+            showsuccess(f"Congrats! Your Project is renamed to '{renamed_project}'", "Sounds cool!")
         
         self.clear_entries(self.all_entries)
         self.master.home.progressbar.update()
@@ -1342,6 +1501,71 @@ class EditSidepanel(Sidepanel):
         
     
 
+class PomodoroSidepanel(Sidepanel):
+    def __init__(self, master, pomodoro, db, start_pos, end_pos):
+        super().__init__(master, None, db, start_pos, end_pos, "Pomodoro Settings")
+
+        self.master = master
+        self.db = db
+        self.pomodoro = pomodoro
+        self.pomodorosettings = self.db.get_pomodoro_settings()
+
+        self.load_pomodoro_settings_frame()
+        self.load_buttons(self.save_pomodoro_settings, 60)
+
+    def load_pomodoro_settings_frame(self):
+        settings = self.pomodorosettings
+        self.pomodoro_settings_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.pomodoro_settings_frame.grid_columnconfigure((0,1,2,3),weight=1)
+        self.pomodoro_settings_frame.grid(column=0, row=0, sticky="nsew", columnspan=4, padx=10, pady=5)
+        
+        ctk.CTkLabel(self.pomodoro_settings_frame, text="Pomodoro Length:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=2, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=3)
+        self.focus_length_entry = SpinBox(self.pomodoro_settings_frame, start_value=settings['focuslength'], min_value=5, max_value=59, scroll_value=1, variable=self.pomodoro.set_focus_length, font=UBUNTU(size=16), corner_radius=10, height=30)
+        self.focus_length_entry.grid(column=3, row=2, sticky="nse", padx=(5,5), pady=(20,5), columnspan=1)
+        
+        ctk.CTkLabel(self.pomodoro_settings_frame, text="Short Break Length:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=3, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=3)
+        self.shortbreak_length_entry = SpinBox(self.pomodoro_settings_frame, start_value=settings['shortbreaklength'], min_value=2, max_value=30, scroll_value=1, variable=self.pomodoro.set_shortbreak_length, font=UBUNTU(size=16), corner_radius=10, height=30)
+        self.shortbreak_length_entry.grid(column=3, row=3, sticky="nse", padx=(5,5), pady=(20,5), columnspan=1)
+        
+        ctk.CTkLabel(self.pomodoro_settings_frame, text="Long Break Length:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=4, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=3)
+        self.longbreak_length_entry = SpinBox(self.pomodoro_settings_frame, start_value=settings['longbreaklength'], min_value=5, max_value=45, scroll_value=1, variable=self.pomodoro.set_longbreak_length, font=UBUNTU(size=16), corner_radius=10, height=30)
+        self.longbreak_length_entry.grid(column=3, row=4, sticky="nse", padx=(5,5), pady=(20,5), columnspan=1)
+        
+        ctk.CTkLabel(self.pomodoro_settings_frame, text="Pomodoros Until Short Break:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=5, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=3)
+        self.pomodoros_until_shortbreak_entry = SpinBox(self.pomodoro_settings_frame, start_value=settings['pomodorosuntilshortbreak'], min_value=2, max_value=8, scroll_value=1, variable=self.pomodoro.set_pomodoros_until_shortbreak, font=UBUNTU(size=16), corner_radius=10, height=30)
+        self.pomodoros_until_shortbreak_entry.grid(column=3, row=5, sticky="nse", padx=(5,5), pady=(20,5), columnspan=1)
+        
+        ctk.CTkLabel(self.pomodoro_settings_frame, text="Pomodoros Until Long Break:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=6, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=3)
+        self.pomodoros_until_longbreak_entry = SpinBox(self.pomodoro_settings_frame, start_value=settings['pomodorosuntillongbreak'], min_value=4, max_value=16, scroll_value=1, variable=self.pomodoro.set_pomodoros_until_longbreak, font=UBUNTU(size=16), corner_radius=10, height=30)
+        self.pomodoros_until_longbreak_entry.grid(column=3, row=6, sticky="nse", padx=(5,5), pady=(20,5), columnspan=1)
+        
+        ctk.CTkLabel(self.pomodoro_settings_frame, text="Automatic Pomodoro/breaks:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=7, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=3)
+        self.automatic = ctk.CTkSwitch(self.pomodoro_settings_frame, text="", onvalue="on", offvalue="off", variable=self.pomodoro.set_automatic, switch_height=15, switch_width=40, font=UBUNTU(size=16))
+        if settings['automatic']:
+            self.automatic.select()
+        self.automatic.grid(column=3, row=7, sticky="nse", padx=(5,5), pady=(20,5), columnspan=1)
+        
+        ctk.CTkLabel(self.pomodoro_settings_frame, text="Progress Notifications:", font=LOBSTER(18), justify="left", anchor="w").grid(column=0, row=8, sticky="nsew", padx=(5,0), pady=(20,5), columnspan=3)
+        self.notifications = ctk.CTkSwitch(self.pomodoro_settings_frame, text="", onvalue="on", offvalue="off", variable=self.pomodoro.set_notifications, switch_height=15, switch_width=40, font=UBUNTU(size=16))
+        if settings['notifications']:
+            self.notifications.select()
+        self.notifications.grid(column=3, row=8, sticky="nse", padx=(5,5), pady=(20,5), columnspan=1)
+        
+    def save_pomodoro_settings(self):
+        if not self.pomodoro.pomodoro_completed:
+            showerror("Pomodoro is running! Complete the current pomodoro then change the settings.")
+            return
+        if self.shortbreak_length_entry.get() > self.longbreak_length_entry.get():
+            showerror("Long Break length should be more than Short Break length.")
+            return
+        if self.pomodoros_until_shortbreak_entry.get() > self.pomodoros_until_longbreak_entry.get():
+            showerror("Required Pomodoros for Long Break should be more than that for Short Break")
+            return
+        self.db.update_pomodoro_settings(self.focus_length_entry.get(), self.shortbreak_length_entry.get(), self.longbreak_length_entry.get(), self.pomodoros_until_shortbreak_entry.get(), self.pomodoros_until_longbreak_entry.get(), self.pomodoro.set_automatic.get(), self.pomodoro.set_notifications.get())
+        showsuccess("Pomodoro settings have been successfully applied!")
+        
+        
+        
 ############################################### PROJECT FRAME ###############################################
 
 
@@ -1508,7 +1732,7 @@ class Music():
                 self.music.music.load(file_path)
                 self.music.music.play(-1, fade_ms=2000)
             else:
-                CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message="Select a valid format to play music (mp3/ogg/wav).", sound=True, option_1="Okay")
+                showerror("Select a valid format to play music (mp3/ogg/wav).", "Okay")
                 self.music_switch_img.configure(dark_image=Image.open(resource_path("images/Configuration/switch-off.png")))
                 del self.music_switch_var
         else:
@@ -1523,14 +1747,15 @@ class Music():
 class CursorButton(ctk.CTkButton):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
+        self.configure(fg_color="transparent")
         self.bind("<Enter>", self.hover_cursor_on)
         self.bind("<Leave>", self.hover_cursor_off)
 
     def hover_cursor_on(self, event):
-        self.configure(cursor="hand2")
+        event.widget.configure(cursor="hand2")
 
     def hover_cursor_off(self, event):
-        self.configure(cursor="")
+        event.widget.configure(cursor="")
         
 
 
@@ -1546,15 +1771,34 @@ class ImageButton(ctk.CTkButton):
 
 
 
+############################################### SpinBox ###############################################
+
+
+
+class SpinBox(CTkSpinbox.CTkSpinbox):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, fg_color="transparent", border_width=1, border_color="gray20", button_color="transparent", button_hover_color="gray6", button_border_width=1, button_border_color="gray8", **kwargs)
+        
+        
+        
 ############################################### KEYBINDS ###############################################
 
 
     
 app = App()
 
-def show_missingfiles_error():
-    c = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp - Missing Files", icon="cancel", message="Uh oh. Seems like there are some files that are missing.\nPlease re-install the application or check the required files manually.", sound=True, option_1="Ah shit!")
-    c.get()
+    
+def showerror(message, option="Oh Shit!"):
+    return CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=message, sound=True, option_1=option)
+    
+def showsuccess(message, option="There we go!"):
+    return CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=message, sound=True, option_1=option)
+    
+def notify(title, message):
+    try:
+        plyer.notification.notify(title=title, message=message, app_name="LakshApp", timeout=10, app_icon="./lakshapp-icon-2 (1400x1400).ico")
+    except:
+        plyer.notification.notify(title=title, message=message, app_name="LakshApp", timeout=10)
     
 def enter(event):
     if app.mainframe.tab_view.get() == 'HOME':

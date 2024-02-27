@@ -28,7 +28,7 @@ class Database:
         self.conn.row_factory = sqlite3.Row  # Use Row factory to fetch rows as dictionaries
         self.cursor = self.conn.cursor()
 
-    def create_table(self):
+    def create_todo_table(self):
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS tasks (
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 task_name TEXT,
@@ -63,6 +63,35 @@ class Database:
                                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)", values)
             self.conn.commit()
 
+    def create_pomodorosettings_table(self):
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS pomodorosettings (
+                                focuslength INTEGER,
+                                shortbreaklength INTEGER,
+                                longbreaklength INTEGER,
+                                pomodorosuntilshortbreak INTEGER,
+                                pomodorosuntillongbreak INTEGER,
+                                automatic BOOLEAN,
+                                notifications BOOLEAN
+                            )''')
+        self.conn.commit()
+        self.cursor.execute('''SELECT COUNT(*) FROM pomodorosettings''')
+        row_count = self.cursor.fetchone()[0]
+        if row_count == 0:
+            self.cursor.execute('''INSERT INTO pomodorosettings (focuslength, shortbreaklength, longbreaklength,
+                                    pomodorosuntilshortbreak, pomodorosuntillongbreak, automatic, notifications)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)''', (25, 5, 15, 2, 4, False, True))
+            self.conn.commit()
+            
+    def create_pomodoro_table(self):
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS pomodoro (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                day INTEGER,
+                                month INTEGER,
+                                year INTEGER
+                            )''')
+        self.conn.commit()
+            
+            
     def add_todo(self, task_name, mylist, project, status, priority, day, month, year):
         self.cursor.execute('''INSERT INTO tasks (task_name, list, project, status, priority, day, month, year)
                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (task_name, mylist, project, status, priority, day, month, year))
@@ -143,6 +172,27 @@ class Database:
             if val['project'] not in projectvalues:
                 projectvalues.append(val['project'])
         return projectvalues
-                
+    
+    def update_pomodoro_settings(self, focus_length, shortbreak_length, longbreak_length, pomodoros_until_shortbreak, pomodoros_until_longbreak, automatic, notifications):
+        self.cursor.execute('''UPDATE pomodorosettings SET focuslength = ?, shortbreaklength = ?, longbreaklength = ?, pomodorosuntilshortbreak = ?, pomodorosuntillongbreak = ?, automatic = ?, notifications = ?''', (focus_length, shortbreak_length, longbreak_length, pomodoros_until_shortbreak, pomodoros_until_longbreak, automatic, notifications))
+        self.conn.commit()
+        return self.cursor.lastrowid
+    
+    def get_pomodoro_settings(self):
+        self.cursor.execute('''SELECT * FROM pomodorosettings''')
+        return dict(self.cursor.fetchone())
+    
+    def add_pomodoro(self):
+        today = datetime.datetime.today()
+        self.cursor.execute('''INSERT INTO pomodoro (day, month, year)
+                               VALUES (?, ?, ?)''', (today.day, today.month, today.year))
+        self.conn.commit()
+        return self.cursor.lastrowid
+    
+    def get_today_pomodoros(self):
+        today = datetime.datetime.today()
+        self.cursor.execute('''SELECT COUNT(*) FROM pomodoro WHERE day = ? AND month = ? AND year = ?''', (today.day, today.month, today.year))
+        return self.cursor.fetchone()[0]
+        
     def __del__(self):
         self.conn.close()

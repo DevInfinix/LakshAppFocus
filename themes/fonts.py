@@ -14,6 +14,7 @@ import customtkinter as ctk
 from PIL import Image
 import sys
 import os
+import pyglet
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -61,11 +62,23 @@ SWITCH_ON = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Configur
 SWITCH_OFF = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Configuration/switch-off.png")))
 TODO_HUMAN = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Humans/todo-human.png")))
 
+
+SHORT_POMO = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Pomodoro/short-break.png")), size=(100,24))
+LONG_POMO = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Pomodoro/long-break.png")), size=(100,25))
+FOCUS_POMO = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Pomodoro/focus.png")), size=(100,35))
+PAUSE_POMO = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Pomodoro/pause.png")), size=(80,60))
+RESUME_POMO = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Pomodoro/resume.png")), size=(80,60))
+OPTIONS_POMO = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Pomodoro/options.png")), size=(50,50))
+SKIP_POMO = ctk.CTkImage(dark_image=Image.open(resource_path("../images/Pomodoro/skip.png")), size=(50,50))
+
+for font_file in os.listdir(resource_path("../fonts")):
+    pyglet.font.add_file(resource_path(os.path.join("../fonts", font_file)))
+    
 def LOBSTER(size=16, weight="bold"):
     return ctk.CTkFont(family="Lobster Two", size=size, weight=weight)
 
 def LOBSTERTWO(size=17, weight="bold"):
     return ctk.CTkFont(family="LOBSTER", size=size, weight=weight)
 
-def UBUNTU(size=18, weight="bold", slant="normal"):
+def UBUNTU(size=18, weight="bold", slant="roman"):
     return ctk.CTkFont(family="UBUNTU", size=size, weight=weight, slant=slant)
