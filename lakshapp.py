@@ -22,8 +22,6 @@ try:
     # import tkinter
     from tkinter import filedialog
     import tkinter.ttk as ttk
-    from CTkMessagebox import CTkMessagebox
-    import CTkSpinbox
     from async_tkinter_loop import async_handler
     from async_tkinter_loop.mixins import AsyncCTk
     from modules import *
@@ -36,11 +34,6 @@ try:
     import textwrap
 
     from os import environ
-    from itertools import cycle
-    import colorama
-    import datetime
-    import asyncio
-    import websockets
     import plyer
 except ImportError as e:
     logging.critical(f"Couldn't Import Modules: {e}", exc_info=True)
@@ -66,12 +59,6 @@ ctk.set_default_color_theme(resource_path("themes/dark-blue.json"))
 class App(ctk.CTk, AsyncCTk):
     def __init__(self):
         super().__init__()
-        self.withdraw()
-        logging.info('LakshApp initialized...')
-        if not plyer.wifi.is_connected():
-            notify("Not connected to internet", "You're not connected to the internet. Some features might not work as intended.")
-        self.splashapp = SplashApp(self)
-        self.splashapp.attributes('-topmost', True)
         logging.info('SplashScreen initialized...')
         self.title("LakshApp - Stay Focused and Motivated")
         self.resizable(True, True)
@@ -94,15 +81,6 @@ class App(ctk.CTk, AsyncCTk):
         
         self.db = Database('database.db')
         self.db.create_todo_table()
-        self.db.create_pomodorosettings_table()
-        self.db.create_pomodoro_table()
-        
-        
-        ############################################### SIDEBAR INITIALIZE ###############################################
-        
-        
-        self.sidebar = Sidebar(self)
-        self.mainframe = MainFrame(self)
         
         
 ############################################### SPLASH SCREEN ###############################################
@@ -152,133 +130,9 @@ class App(ctk.CTk, AsyncCTk):
             return int(int(time.split(' ')[0])*60)
         if 'hour' in time:
             return int(int(time.split(' ')[0])*3600)
-    
-    @async_handler
-    async def close_confirmation(self):
-        dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Done for the day? Hope to see you soon!", sound=True, option_1="Exit", option_2="Keep Grinding")
-        if dialog.get() == "Exit":
-            if self.sessions.socket:
-                try:
-                    await self.sessions.socket.close()
-                except:
-                    pass
-            self.destroy()
-        else:
-            pass
         
 
 
-############################################### SIDEBAR ###############################################
-        
-        
-        
-class Sidebar(ctk.CTkFrame):
-    def __init__(self, master):
-        super().__init__(master, corner_radius=18, fg_color="gray8")
-        
-        self.master = master
-        self.db = self.master.db
-        self.grid(row=0, column=0, sticky="nsew", padx=(15,7.5),pady=15, columnspan=1)
-        self.grid_columnconfigure((0,1), weight=1)
-        self.grid_rowconfigure((0,1,2,3,4,5), weight=1)
-
-        self.load_logo()
-        self.load_tabs_buttons()
-        self.load_music()
-        
-        self.tabsbutton = [self.hometab, self.todotab, self.statstab, self.sessionstab, self.pomodorotab]
-        
-    def load_logo(self):
-        self.logo_label = ctk.CTkLabel(self, text="LakshApp", font=LOBSTERTWO(size=34), text_color=LIGHT_BLUE, justify="center")
-        self.logo_label.grid(row=0, column=0, padx=25, pady=(80,70),columnspan=2, rowspan=1, sticky="nsew")
-    
-    def load_tabs_buttons(self):
-        self.hometab = CursorButton(master=self, text=" Home ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_home, font=LOBSTER())
-        self.hometab.grid(padx=25, pady=8, row=1, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.todotab = CursorButton(master=self, text=" To-Do ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_todo, font=LOBSTER())
-        self.todotab.grid(padx=25, pady=8, row=2, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.pomodorotab = CursorButton(master=self, text=" Pomodoro ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_pomodoro, font=LOBSTER())
-        self.pomodorotab.grid(padx=25, pady=8, row=3, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.statstab = CursorButton(master=self, text=" My Progress ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_stats, font=LOBSTER())
-        self.statstab.grid(padx=25, pady=8, row=4, column=0,columnspan=2, rowspan=1, sticky="ew")
-        self.sessionstab = CursorButton(master=self, text=" Live Sessions ", hover_color=THEME_BLUE, corner_radius=20, border_color=THEME_BLUE, border_width=2,fg_color="gray13", command=self.set_sessions, font=LOBSTER())
-        self.sessionstab.grid(padx=25, pady=8, row=5, column=0,columnspan=2, rowspan=1, sticky="ew")
-    
-    
-    def load_music(self):
-        self.music_switch_img = ctk.CTkImage(dark_image=Image.open(resource_path("images/Configuration/switch-off.png")))
-        self.music = Music(self.master, self.music_switch_img)
-        self.music_switch = ctk.CTkButton(self, text="Ambient Mode", anchor="w", image=self.music_switch_img, command=self.music.music_switch_event, fg_color="gray4", hover=False, corner_radius=20, font=LOBSTER())
-        self.music_switch.grid(row=6, column=0, sticky="nsew", padx=25,pady=(8,100), columnspan=2)
-        
-        self.music_switch.bind("<Enter>", self.hover_cursor_on)
-        self.music_switch.bind("<Leave>", self.hover_cursor_off)
-
-    def hover_cursor_on(self, event):
-        event.widget.configure(cursor="hand2")
-
-    def hover_cursor_off(self, event):
-        event.widget.configure(cursor="")
-
-    def set_current_tab(self, current_tab):
-        if hasattr(self.master.todo, "current_sidepanel"):
-            if self.master.todo.current_sidepanel:
-                if (not self.master.todo.current_sidepanel.is_closed):
-                    self.master.todo.current_sidepanel.animate_backwards()
-        for tab in self.tabsbutton:
-            if current_tab == tab:
-                tab.configure(fg_color=THEME_BLUE)
-            else:
-                tab.configure(fg_color="gray13")
-        
-    def set_home(self):
-        self.master.mainframe.tab_view.set("HOME")
-        self.set_current_tab(self.hometab)
-        
-    def set_todo(self):
-        self.master.mainframe.tab_view.set("TO-DO")
-        self.set_current_tab(self.todotab)
-        
-    def set_pomodoro(self):
-        self.master.mainframe.tab_view.set("POMODORO")
-        self.set_current_tab(self.pomodorotab)
-        
-    @async_handler
-    async def set_stats(self):
-        self.master.stats.load_calendar()
-        self.master.mainframe.tab_view.set("STATS")
-        self.set_current_tab(self.statstab)
-            
-        
-    @async_handler
-    async def set_sessions(self):
-        if not self.master.sessions.socket:
-            dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="Select 'Start' to host a session. If you have a valid session code, select 'Join'.", sound=True, option_1="Join", option_2="Start")
-            inp = dialog.get()
-            if inp:
-                if inp.lower() == 'start':
-                    dialog2 = ctk.CTkInputDialog(text="Enter your username\nfor the live session.", title="LakshApp")
-                    inp2 = dialog2.get_input()
-                    if inp2:
-                        if inp2 != '':
-                            self.master.sessions.own_username = inp2
-                            await self.master.sessions.start_server(WEBSOCKET_SERVER, inp2)
-                if inp.lower() == 'join':
-                    dialog2 = ctk.CTkInputDialog(text="Enter the code for the live session.", title="LakshApp")
-                    inp2 = dialog2.get_input()
-                    if inp2:
-                        if inp2 != '':
-                            self.master.sessions.server_code = inp2
-                            
-                            dialog3 = ctk.CTkInputDialog(text="Enter your username for the live session.\n[Warning: The host's and participant's username should be different!]", title="LakshApp")
-                            inp3 = dialog3.get_input()
-                            if inp3:
-                                if inp3 != '':
-                                    self.master.sessions.own_username = inp3
-                                    await self.master.sessions.join_server(WEBSOCKET_SERVER, inp2, inp3)
-        else:
-            self.mainframe.tab_view.set("SESSIONS")
-            self.set_current_tab(self.sessionstab)
 
 
 
@@ -456,33 +310,6 @@ class HomeTab():
             self.home_listselector.set(db[0]['list'])
             self.home_projectselector.set(choice)
     
-
-
-class HomeProgressBar(ctk.CTkProgressBar):
-    def __init__(self, master, root, db):
-        super().__init__(master, orientation="horizontal", height=15)
-        self.master = root
-        self.db = db
-        self.home = master
-        self.set(self.percent())
-        self.grid(row=5, column=0, pady=(10,5), padx=(45,35), sticky="ew", columnspan=8)
-        
-        self.load_progress_label()
-        
-    def load_progress_label(self):
-        self.progresslabel = ctk.CTkLabel(self.home, text=f"↪ Your Progress ({self.db.get_completed_tasks_count()}/{self.db.get_total_tasks_count()} completed)", font=LOBSTER(size=16, weight="normal"), justify="right")
-        self.progresslabel.grid(row=6, column=0, pady=0, padx=25, sticky="e", columnspan=8)
-
-    def percent(self):
-        if self.db.get_total_tasks_count() == 0:
-            return 0
-        return (self.db.get_completed_tasks_count()/self.db.get_total_tasks_count())
-        
-    def update(self):
-        comp = self.db.get_completed_tasks_count()
-        tot = self.db.get_total_tasks_count()
-        self.set(comp/tot)
-        self.progresslabel.configure(text=f"↪ Your Progress ({comp}/{tot} completed)")
         
         
         
@@ -529,40 +356,6 @@ class ToDoTab():
                 return x
         return False
                 
-    def load_project_frames(self):
-        totals = self.get_projects()
-        for i, project in enumerate(totals):
-            project_main_frame = ctk.CTkFrame(self.todoxyframe, fg_color="transparent")
-            project_main_frame.grid_columnconfigure((0,1,2,3),weight=1)
-            
-            project_edit_button = CursorButton(project_main_frame, text=f"Edit", image=EDIT_IMG, font=LOBSTER(size=16), corner_radius=8, border_color=THEME_LIGHT_BLUE, border_width=2,fg_color=THEME_BLUE, hover_color=THEME_LIGHT_BLUE, command=lambda p=project: self.master.toggle_edit_sidepanel(p))
-            project_delete_button = CursorButton(project_main_frame, text=f"Delete", image=DELETE_IMG, font=LOBSTER(size=16), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED, command=lambda p=project_main_frame, n=project: self.delete_project_frame(p, n))
-            
-            if self.project_columns == 8:
-                self.project_rows += 1
-                self.project_columns = 0
-                
-            if (i == len(totals) - 1) and (len(totals) % 2 != 0):
-                project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=8)
-                
-                project_frame = ProjectFrame(self.master, project_main_frame, self.db, project, "big")
-                project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
-                project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
-                project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
-            else:
-                project_main_frame.grid(row=self.project_rows, column=self.project_columns, padx=10, pady=(10,0), sticky="nsew", columnspan=4)
-                
-                project_frame = ProjectFrame(self.master, project_main_frame, self.db, project, "small")
-                project_frame.grid(column=0, row=0, columnspan=4, sticky="nsew")
-                project_edit_button.grid(row=1, column=0, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
-                project_delete_button.grid(row=1, column=2, pady=(10, 50), padx=5, sticky="sew", columnspan=2)
-                
-            self.project_columns += 4
-            self.project_main_frame_list.append(project_main_frame)
-            self.project_frame_list.append(project_frame)
-            
-            self.project_sidepanels[project] = EditSidepanel(self.master, self, self.db, 1.04, 0.7, project)
-            self.master.after(500, self.project_sidepanels[project].load_editproject_frame)
             
             
     def load_sidepanels(self):
@@ -646,121 +439,6 @@ class ToDoTab():
         
         
         
-############################################### TO-DOTAB ###############################################
-
-
-
-class PomodoroTab():
-    def __init__(self, master, parent_tabview):
-        self.master = master
-        self.db = self.master.db
-        
-        self.pomodoro = parent_tabview
-        
-        self.pomodoro.grid_columnconfigure((0,1,2,3),weight=1)
-        self.pomodoro.grid_rowconfigure((0,1,2,3),weight=1)
-
-        self.set_focus_length = ctk.IntVar()
-        self.set_shortbreak_length = ctk.IntVar()
-        self.set_longbreak_length = ctk.IntVar()
-        self.set_pomodoros_until_shortbreak = ctk.IntVar()
-        self.set_pomodoros_until_longbreak = ctk.IntVar()
-        self.set_automatic = ctk.BooleanVar()
-        self.set_notifications = ctk.BooleanVar()
-        
-        self.states = cycle([None, 'focus', None, 'shortbreak', None, 'longbreak'])
-        self.statuses = cycle([FOCUS_POMO, SHORT_POMO, LONG_POMO])
-        self.current_state = next(self.states)
-        self.pomodoro_playing = False
-        self.pomodoro_completed = True
-        self.load_pomodoro_sidepanel()
-        self.load_components()
-        
-    
-    def load_pomodoro_sidepanel(self):
-        self.options_sidepanel = PomodoroSidepanel(self.master, self, self.db, 1.04, 0.7)
-        
-        
-    def load_components(self):
-        self.status = CursorButton(self.pomodoro, text="", image=next(self.statuses), hover=False)
-        self.status.grid(row=0,column=0,columnspan=4,sticky="nsew")
-        
-        self.pomodoro_count_label = ctk.CTkLabel(self.pomodoro, text=f"{self.db.get_today_pomodoros()} pomodoros completed today", font=LOBSTERTWO(17), fg_color="gray18", corner_radius=30)
-        self.pomodoro_count_label.grid(row=1,column=0,columnspan=4,sticky="ns", padx=6, pady=10)
-        
-        self.minutes = ctk.CTkLabel(self.pomodoro, text="25", font=UBUNTU(220), fg_color="black", corner_radius=30)
-        self.minutes.grid(row=2,column=0,columnspan=2,sticky="nse", padx=6, pady=10)
-        
-        self.seconds = ctk.CTkLabel(self.pomodoro, text="00", font=UBUNTU(220), fg_color="black", corner_radius=30)
-        self.seconds.grid(row=2,column=2,columnspan=2,sticky="nsw", padx=6, pady=10)
-        
-        self.lowerframe = ctk.CTkFrame(self.pomodoro, fg_color="transparent")
-        self.lowerframe.grid(row=3, column=0, columnspan=4)
-        
-        self.options = CursorButton(self.lowerframe, text="", image=OPTIONS_POMO, hover=False, width=60, command=self.show_sidepanel)
-        self.options.grid(row=0,column=0,columnspan=1,sticky="ns", padx=8)
-        
-        self.play = CursorButton(self.lowerframe, text="", image=PAUSE_POMO, hover=False, width=60, command=self.toggle_pomodoro)
-        self.play.grid(row=0,column=1,columnspan=1,sticky="ns", padx=8)
-        
-        self.skip = CursorButton(self.lowerframe, text="", image=SKIP_POMO, hover=False, width=60, command=self.skip_pomodoro)
-        self.skip.grid(row=0,column=2,columnspan=1,sticky="ns", padx=8)
-        
-    
-    def show_sidepanel(self):
-        self.options_sidepanel.animate()
-    
-    
-    def toggle_pomodoro(self):
-        if not self.pomodoro_playing:
-            self.play.configure(image=RESUME_POMO)
-            self.pomodoro_playing = True
-            if self.current_state == None:
-                self.start_new()
-            else:
-                self.resume_current_state()
-        else:
-            self.play.configure(image=PAUSE_POMO)
-            self.pomodoro_playing = False
-            self.pause_current_state()
-    
-    def start_new(self):
-        settings = self.db.get_pomodoro_settings()
-        notifs = self.set_notifications.get()
-        self.current_state = next(self.states)
-        self.pomodoro_completed = False
-        if self.current_state == "focus":
-            if notifs:
-                notify("Pomodoro Started", f"Next break is in {settings['focuslength']} minutes. Keep grinding!")
-            self.start_focus(10)
-        elif self.current_state == "shortbreak":
-            if notifs:
-                notify("Short Break Started", f"Next pomodoro is in {settings['shortbreaklength']} minutes. Keep grinding!")
-            self.start_shortbreak(settings['shortbreaklength'])
-        elif self.current_state == "longbreak":
-            if notifs:
-                notify("Long Break Started", f"Next pomodoro is in {settings['longbreaklength']} minutes. Keep grinding!")
-            self.start_longbreak(settings['longbreaklength'])
-                    
-    def skip_pomodoro(self):
-        if self.current_state == None:
-            self.start_new()
-        elif self.current_state != None:
-            dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Do you want to skip the current pomodoro/break?", sound=True, options=["I'm done", "Don't end it yet"])
-            if dialog.get() == "I'm done":
-                self.end_current_state()
-    
-    def start_focus(self, length):
-        FlipClock(self.master, self, length).start_timer()
-            
-        
-    
-
-
-
-        
-        
-        
 class FlipClock():
     def __init__(self, master, pomodoro, time_limit):
         self.master = master
@@ -817,29 +495,6 @@ class StatsTab():
         self.stats.grid_rowconfigure((0,1,2,3),weight=1)
         self.load_progressbar()
         self.load_calendar()
-        
-    
-    def load_calendar(self):
-        self.stats_label = ctk.CTkLabel(self.stats, text=f"HERE's WHAT I ACHIEVED!", font=LOBSTERTWO(size=25), fg_color="transparent", wraplength=780, justify="center")
-        self.stats_label.grid(row=0, column=0, pady=(20,5), padx=60, sticky="new", columnspan=4)
-        dates = self.db.get_total_tasks()
-        if dates == []:
-            values = {}
-        else:
-            values = {}
-            for val in dates:
-                date_tuple = (val['day'], val['month'], val['year'])
-                if date_tuple not in values:
-                    values[date_tuple] = 10
-            if hasattr(self.stats, "calendar"):
-                self.stats.calendar.destroy()
-            self.calendar = CTkCalendarStat(self.stats, values, border_width=0, border_color=WHITE,
-                                fg_color=NAVY_BLUE_DARK, title_bar_border_width=2, title_bar_border_color="gray80",
-                                title_bar_fg_color=NAVY_BLUE, calendar_fg_color=NAVY_BLUE, corner_radius=30,
-                                title_bar_corner_radius=10, calendar_corner_radius=10, calendar_border_color=WHITE,
-                                calendar_border_width=0, calendar_label_pad=5, data_colors=["blue", "green", RED]
-                    )
-            self.calendar.grid(row=1, column=0, pady=(20,5), padx=5, sticky="nsew", columnspan=2, rowspan=3)
             
     def load_progressbar(self):
         meterframe = ctk.CTkFrame(self.stats, fg_color=NAVY_BLUE, corner_radius=30)
@@ -877,358 +532,6 @@ class StatsTab():
 
         meter3.textvariable.set(f'{int((meter3.arcvariable.get() / 360) * 100)}%') 
         
-        
-
-############################################### SESSIONSTAB ###############################################
-
-
-
-class SessionsTab():
-    def __init__(self, master, parent_tabview):
-        self.master = master
-        self.db = self.master.db
-        self.socket = None
-        self.role = None
-        self.total_message = 0
-        
-        self.sessions = parent_tabview
-        
-        self.sessions.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
-        self.sessions.grid_rowconfigure((0,1,2,3,4,5,6),weight=1)
-        
-        self.load_sessions_topbar()
-        self.load_sessions_chat()
-
-
-    def load_sessions_topbar(self):
-        self.sessions_progressbutton = CursorButton(self.sessions, text="Start Session", command=self.start_sessions_timer, font=LOBSTER(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
-        self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=(10, 0), sticky="ew", columnspan=6, rowspan=1)
-        
-        self.sessions_leavebutton = CursorButton(self.sessions, text="⍇ Leave Room", command=self.leavesession, font=LOBSTER(size=15), corner_radius=8, border_color=RED, border_width=2,fg_color=THEME_RED, hover_color=RED)
-        self.sessions_leavebutton.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="e", columnspan=8, rowspan=1)
-            
-        self.sessions_progressbar = ctk.CTkProgressBar(self.sessions, orientation="horizontal", height=15)
-        self.sessions_progressbar.set(0)
-        self.sessions_progressbar.grid(row=2, column=0, pady=(0,0), padx=15, sticky="ew", columnspan=8, rowspan=1)
-        
-        if self.role == 'member':
-            self.sessions_progressbutton.destroy()
-            self.sessions_progressbutton = CursorButton(self.sessions, state="disabled", text="The host can start a session", font=LOBSTER(size=15), corner_radius=8, border_color=THEME_BLUE, border_width=2,fg_color="gray13", hover_color=THEME_BLUE)
-            self.sessions_progressbutton.grid(row=0, column=0, pady=0, padx=(10, 0), sticky="ew", columnspan=6, rowspan=1)
-        
-        
-    def load_sessions_chat(self):
-        self.sessions_frame = ctk.CTkScrollableFrame(self.sessions, corner_radius=18, fg_color="gray4")
-        self.sessions_frame.grid(row=3, column=0, sticky="nsew", padx=15,pady=(10,15), columnspan=8, rowspan=3)
-        self.sessions_frame.grid_columnconfigure((0,1), weight=1)
-        
-        self.sessions_frame.bind_all("<Button-4>", lambda e: self.sessions_frame._parent_canvas.yview("scroll", -1, "units"))
-        self.sessions_frame.bind_all("<Button-5>", lambda e: self.sessions_frame._parent_canvas.yview("scroll", 1, "units"))
-        
-        self.send_area = ctk.CTkEntry(self.sessions, placeholder_text="Say Hello to your session partner!", font=LOBSTER(size=18, weight="normal"), corner_radius=50, height=60)
-        self.send_area.grid(row=6, column=0, pady=(0,8), padx=(15,0),  sticky="sew", columnspan=7, rowspan=1)
-        self.send_button = CursorButton(self.sessions, text="➤", command=self.add_own_message, font=LOBSTER(size=30, weight="normal"), corner_radius=100, fg_color="transparent", height=60, hover_color="gray4")
-        self.send_button.grid(row=6, column=7, pady=(0,8), padx=(0,15), columnspan=1, sticky="se", rowspan=1)
-        
-        
-    @async_handler
-    async def leavesession(self):
-        d = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Done for the day? Hope to see you soon!\n[Attention: Ending the session will result in the loss of all your progress during the session.]", sound=True, option_1="I'm done", option_2="I'm staying")
-        if d.get() == "I'm done":
-            await self.close_socket()
-    
-    
-    @async_handler
-    async def add_own_message(self):
-        message = self.send_area.get()
-        if (message == '') or (not message.strip()):
-            self.send_area.focus()
-            return
-        message_frame = ctk.CTkFrame(self.sessions_frame, corner_radius=18, fg_color="gray13")
-        message_frame.grid(row=self.total_message, column=0, sticky="new", padx=5,pady=5, columnspan=2, rowspan=1)
-        message_frame.grid_columnconfigure((0,1), weight=1)
-        
-        message_label = ctk.CTkLabel(message_frame, text=f"[You]: {message}", font=LOBSTER(size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
-        message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
-        
-        self.sessions_frame.after(10, self.sessions_frame._parent_canvas.yview_moveto, 1.0) #Scroll to bottom on new message
-        
-        self.total_message += 1
-        
-        data = {
-            'from': 'client',
-            'type': 'message',
-            'message': message,
-            'user': self.own_username
-        }
-        try:
-            await self.socket.send(json.dumps(data))
-        except Exception as e:
-            logging.error(e)
-            showerror("Server disconnected. Please check your internet connection.", "Ah sad")
-            await self.close_socket()
-        self.send_area.delete(0, "end")
-        
-        
-    def add_other_message(self, user, message):
-        message_frame = ctk.CTkFrame(self.sessions_frame, corner_radius=18, fg_color="gray22")
-        if user == 'System':
-            message_frame.configure(fg_color=THEME_BLUE)
-        message_frame.grid(row=self.total_message, column=0, sticky="new", padx=5,pady=5, columnspan=2, rowspan=1)
-        message_frame.grid_columnconfigure((0,1), weight=1)
-        
-        message_label = ctk.CTkLabel(message_frame, text=f"[{user}]: {message}", font=LOBSTER(size=18, weight="normal"), fg_color="transparent", wraplength=680, justify="left", state="disabled")
-        message_label.grid(row=0, column=0, pady=5, padx=15, sticky="nw", columnspan=2)
-            
-        self.total_message += 1
-        
-        self.sessions_frame.after(10, self.sessions_frame._parent_canvas.yview_moveto, 1.0) #Scroll to bottom on new message
-        
-    
-    @async_handler
-    async def start_sessions_timer(self):
-        d = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="info", message="Select duration of session", sound=True, options=['30 Minutes', '45 Minutes', '1 Hour'])
-        if d.get() in ['30 Minutes', '45 Minutes', '1 Hour']:
-            event = {
-                'type': 'startsession',
-                'from': 'client',
-                'duration': d.get()
-            }
-            try:
-                await self.socket.send(json.dumps(event))
-            except Exception as e:
-                logging.error(e)
-                showerror("Server disconnected. Please check your internet connection.", "Ah sad!")
-                await self.close_socket()
-        
-    
-    @async_handler
-    async def stop_sessions_timer(self):
-        dialog = CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message="Do you want to end this session?", sound=True, options=["I'm done", "Don't end it yet"])
-        if dialog.get() == "I'm done":
-            event = {
-                'type': 'stopsession',
-                'from': 'client'
-            }
-            try:
-                await self.socket.send(json.dumps(event))
-            except Exception as e:
-                logging.error(e)
-                showerror("Server disconnected. Please check your internet connection.", "Ah sad!")
-                await self.close_socket()
-        elif dialog.get() == "Don't end it yet":
-            pass
-    
-    async def start_server(self, server_address, username):
-        try:
-            async with websockets.connect(server_address) as socket:
-                event = {
-                    'from': 'client',
-                    'type': 'start',
-                    'user': username
-                }
-                await asyncio.sleep(0)
-                await socket.send(json.dumps(event))
-                self.role = 'host'
-                await asyncio.gather(self.receive_message(socket, 'host', username))
-        except Exception as e:
-            logging.error(e)
-            showerror("Server disconnected. Please check your internet connection.", "Ah sad!")
-            await self.close_socket()
-         
-       
-    async def join_server(self, server_address, code, username):
-        try:
-            async with websockets.connect(server_address) as socket:
-                event = {
-                    'from': 'client',
-                    'type': 'join',
-                    'code': code,
-                    'user': username
-                }
-                await asyncio.sleep(1)
-                await socket.send(json.dumps(event)) 
-                self.role = 'member'
-                await asyncio.gather(self.receive_message(socket, 'member', username))
-        except Exception as e:
-            logging.error(e)
-            showerror("Server disconnected. Please check your internet connection.", "Ah sad!")
-            await self.close_socket()
-                
-                
-    async def receive_message(self, socket, role, username):
-        async for message in socket:
-            event = json.loads(message)
-            if event['type'] == 'error':
-                if event['errortype'] == 'SessionNotFound':
-                    showerror(event['message'])
-                    self.master.sidebar.set_home()
-                    break
-                if event['errortype'] == 'RoomFull':
-                    showerror(event['message'])
-                    self.master.sidebar.set_home()
-                    break
-            if event['type'] == 'started':
-                self.master.mainframe.tab_view.set("SESSIONS")
-                self.master.sidebar.set_current_tab(self.master.sidebar.sessionstab)
-                await asyncio.sleep(1)
-                logging.info(f"Your code is: [{event['code']}]")
-                pyperclip.copy(event['code'])
-                self.add_other_message(user='System', message=f"Your room's code is: [{event['code']}] | The code has been copied to your clipboard.")
-                self.socket = socket
-            if event['type'] == 'joined':
-                self.master.mainframe.tab_view.set("SESSIONS")
-                self.master.sidebar.set_current_tab(self.master.sidebar.sessionstab)
-                await asyncio.sleep(1)
-                logging.info(f"You joined {event['code']}")
-                pyperclip.copy(event['code'])
-                self.add_other_message(user='System', message=f"You joined {event['code']} | The code has been copied to your clipboard.")
-                self.socket = socket
-                self.sessions_progressbutton.configure(state="disabled", text="The host can start a session")
-            if event['type'] == 'message':
-                if event['user'] != username:
-                    self.add_other_message(user=event['user'], message=event['message'])
-            if event['type'] == 'startsessionconfirmed':
-                duration = event['duration']
-                time = self.master.convert_time(duration)
-                self.sessions_progressbar_task = asyncio.create_task(self.update_sessions_progressbar(time))
-                showsuccess(f'Session started for {duration}!\nKeep Grinding!', "Let's do this!")
-                self.master.levelsound.play()
-                if self.role == 'member':
-                    self.sessions_progressbutton.configure(fg_color=THEME_RED, hover_color=RED, border_color=RED, state="disabled", text="Session started by the host")
-                else:
-                    self.sessions_progressbutton.configure(fg_color=THEME_RED, hover_color=RED, border_color=RED, text="Stop Session", command=self.stop_sessions_timer)
-                
-            if event['type'] == 'stopsessionconfirmed':
-                self.sessions_progressbar_task.cancel()
-                await asyncio.sleep(1)
-                self.sessions_progressbar.set(0)
-                showerror('Session stopped by the host!\nSee you soon!', "Lost it!")
-                if self.role == 'member':
-                    self.sessions_progressbutton.configure(hover_color=THEME_BLUE, fg_color="gray13", state="disabled", text="The host can start a session", border_color=THEME_BLUE)
-                else:
-                    self.sessions_progressbutton.configure(hover_color=THEME_BLUE, fg_color="gray13", text="Start Session", command=self.start_sessions_timer, border_color=THEME_BLUE)
-                
-            if event['type'] == 'disconnected':
-                if event['from'] == 'server':
-                    if event['role'] == 'host':
-                        logging.info('The host has been disconnected')
-                        showerror('The host has been disconnected')
-                        await asyncio.sleep(1)
-                        self.master.mainframe.tab_view.set("HOME")
-                        self.master.sidebar.set_current_tab(self.master.sidebar.hometab)
-                        self.socket = None
-                        if role == 'host':
-                            return
-                        else:
-                            break
-                    elif event['role'] == 'member':
-                        logging.info('Participant disconnected')
-                        if role == 'member':
-                            showerror('You have been disconnected')
-                            await asyncio.sleep(1)
-                            self.master.mainframe.tab_view.set("HOME")
-                            self.master.sidebar.set_current_tab(self.master.sidebar.hometab)
-                            return
-                        else:
-                            CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="warning", message='The participant has been disconnected', sound=True, option_1="Oh shit!")
-                                    
-
-    async def update_sessions_progressbar(self, time):
-        cur = 1
-        while True:
-            if cur/time == 1:
-                self.sessions_progressbar.set(0)
-                showsuccess('Session completed! Well done comrade!', "Less gooo!")
-                self.trumpetsound.play()
-                if self.role == 'member':
-                    self.sessions_progressbutton.configure(hover_color=THEME_BLUE, fg_color="gray13", state="disabled", text="The host can start a session", border_color=THEME_BLUE)
-                else:
-                    self.sessions_progressbutton.configure(hover_color=THEME_BLUE, fg_color="gray13", text="Start Session", command=self.start_sessions_timer, border_color=THEME_BLUE)
-                return
-            self.sessions_progressbar.set(cur/time)
-            cur += 1
-            await asyncio.sleep(1)
-    
-    
-    async def close_socket(self):
-        try:
-            await self.socket.close()
-        except:
-            pass
-        self.socket = None
-        self.master.sidebar.set_home()
-        
-        
-        
-############################################### SIDEPANEL ###############################################
-
-
-
-class Sidepanel(ctk.CTkScrollableFrame): #Inspired from @Atlas (YouTube)
-    def __init__(self, master, todotab, db, start_pos, end_pos, label):
-        super().__init__(master, label_text=label, label_fg_color=DULL_BLUE, border_width=2, border_color=WHITE, corner_radius=8, fg_color="black", label_font=LOBSTER(size=18))
-        
-        self.master = master
-        self.todo = todotab
-        self.db = db
-        self.checkboxes = []
-        
-        self.grid_columnconfigure((0,1,2,3),weight=1)
-        
-        self.start_pos = start_pos + 0.04
-        self.end_pos = end_pos - 0.03
-        self.width = abs(start_pos - end_pos)
-        self.pos = self.start_pos
-        self.is_closed = True
-        self.place(relx = self.start_pos, rely = 0.05, relwidth = self.width, relheight = 0.95)
-
-    def animate(self):
-        if self.is_closed:
-            self.animate_forward()
-        else:
-            self.animate_backwards()
-            
-
-    def animate_forward(self):
-        if self.todo:
-            if self.master.todo.current_sidepanel:
-                if (not self.master.todo.current_sidepanel.is_closed):
-                    self.master.todo.current_sidepanel.animate_backwards()
-                    return
-        if self.pos > self.end_pos:
-            self.pos -= 0.03
-            self.place(relx = self.pos, rely = 0.05, relwidth = self.width, relheight = 0.9)
-            self.after(5, self.animate_forward)
-        else:
-            self.is_closed = False
-            if self.todo:
-                self.master.todo.current_sidepanel = self
-
-    def animate_backwards(self):
-        if self.pos < self.start_pos:
-            self.pos += 0.03
-            self.place(relx = self.pos, rely = 0.05, relwidth = self.width, relheight = 0.9)
-            self.after(5, self.animate_backwards)
-        else:
-            self.is_closed = True
-            if self.todo:
-                self.master.todo.current_sidepanel = None
-    
-    
-    def load_buttons(self, checkcommand, pady, place="down"):
-        self.checkbutton = CursorButton(self, command=checkcommand, fg_color=THEME_BLUE, text_color="white", text=CHECK, border_width=2, hover_color=THEME_LIGHT_BLUE, border_color=THEME_LIGHT_BLUE, corner_radius=20)
-        self.cancelbutton = CursorButton(self, command=self.animate, fg_color=THEME_RED, text_color="white", text=CROSS, border_width=2, hover_color=RED, border_color=RED, corner_radius=30)
-        if place == "down":
-            self.checkbutton.grid(column=0, row=1, columnspan=2, sticky="sew", padx=15, pady=(pady,0))
-            self.cancelbutton.grid(column=2, row=1, columnspan=2, sticky="sew", padx=15, pady=(pady,0))
-        else:
-            self.checkbutton.grid(column=0, row=0, columnspan=2, sticky="new", padx=15, pady=(0,pady))
-            self.cancelbutton.grid(column=2, row=0, columnspan=2, sticky="new", padx=15, pady=(0,pady))
-        
-    def clear_entries(self, entries):
-        for i in entries:
-            i.delete(0, "end")
             
             
         
@@ -1563,57 +866,6 @@ class PomodoroSidepanel(Sidepanel):
             return
         self.db.update_pomodoro_settings(self.focus_length_entry.get(), self.shortbreak_length_entry.get(), self.longbreak_length_entry.get(), self.pomodoros_until_shortbreak_entry.get(), self.pomodoros_until_longbreak_entry.get(), self.pomodoro.set_automatic.get(), self.pomodoro.set_notifications.get())
         showsuccess("Pomodoro settings have been successfully applied!")
-        
-        
-        
-############################################### PROJECT FRAME ###############################################
-
-
-
-class ProjectFrame(ctk.CTkScrollableFrame):
-    def __init__(self, root, base_frame, db, projectname, columnspan):
-        super().__init__(base_frame, label_text=projectname, label_fg_color="gray8", border_width=3, border_color=BLACK, corner_radius=18, fg_color="gray13", label_font=LOBSTER(size=18))
-        
-        self.root = root
-        self.db = db
-        self.projectname = projectname
-        self.columnspan = columnspan
-        
-        self.grid_columnconfigure((0,1,2,3,4,5,6,7),weight=1)
-        
-        self.columns = 0
-        self.rows = 0
-        
-        self.mylist_list = []
-        
-        self.load_projects()
-        
-    def load_projects(self):
-        projects = self.db.search_todo_by_project(self.projectname)
-        totals = []
-        for mylist in projects:
-            if mylist['list'] not in totals:
-                totals.append(mylist['list'])
-
-        for i, mylist in enumerate(totals):
-            if self.columns == 8:
-                self.rows += 1
-                self.columns = 0
-                
-            if (i == len(totals) - 1) and (len(totals) % 2 != 0):
-                todo_frame = ToDoFrame(self.root, self, self.db, mylist, self.projectname, projectcolumnspan=self.columnspan, todocolumnspan="big")
-                todo_frame.grid(row=self.rows, column=0, padx=10, pady=10, sticky="ew", columnspan=8)
-            else:
-                todo_frame = ToDoFrame(self.root, self, self.db, mylist, self.projectname, projectcolumnspan=self.columnspan, todocolumnspan="small")
-                todo_frame.grid(row=self.rows, column=self.columns, padx=10, pady=10, sticky="ew", columnspan=4)
-            self.columns += 4
-            self.mylist_list.append(todo_frame)
-    
-    def search_listframe(self, mylist):
-        for x in self.mylist_list:
-            if x.listname == mylist:
-                return x
-        return False
 
 
 
@@ -1787,18 +1039,6 @@ class SpinBox(CTkSpinbox.CTkSpinbox):
     
 app = App()
 
-    
-def showerror(message, option="Oh Shit!"):
-    return CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="cancel", message=message, sound=True, option_1=option)
-    
-def showsuccess(message, option="There we go!"):
-    return CTkMessagebox(corner_radius=10, fade_in_duration=3, title="LakshApp", icon="check", message=message, sound=True, option_1=option)
-    
-def notify(title, message):
-    try:
-        plyer.notification.notify(title=title, message=message, app_name="LakshApp", timeout=10, app_icon="./lakshapp-icon-2 (1400x1400).ico")
-    except:
-        plyer.notification.notify(title=title, message=message, app_name="LakshApp", timeout=10)
     
 def enter(event):
     if app.mainframe.tab_view.get() == 'HOME':
