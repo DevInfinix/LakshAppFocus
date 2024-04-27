@@ -1,6 +1,4 @@
-<h1 align="center"><strong>LakshApp</strong></h1>
-
-# LakshApp: Stay Focused and Organized
+<h1 align="center"><strong>LakshApp: Stay Focused and Organized</strong></h1>
 
 ---
 
