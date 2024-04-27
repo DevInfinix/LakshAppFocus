@@ -1,6 +1,5 @@
+![LakshApp Banner](./lakshapp-banner-1.jpg)
 <h1 align="center"><strong>LakshApp: Stay Focused and Organized</strong></h1>
-
----
 
 #### LakshApp is a versatile productivity tool designed to help you stay focused, organized, and motivated in your daily tasks and projects. More than just a simple to-do app, LakshApp offers a comprehensive workspace and project management solution to streamline your workflow and boost your productivity.
 
